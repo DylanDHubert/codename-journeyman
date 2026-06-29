@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 
 import { CellView } from "@/components/game/CellView";
 import { PathLineOverlay, type PathLineStyle } from "@/components/game/PathLineOverlay";
+import { WaterCanvasOverlay } from "@/components/game/WaterCanvasOverlay";
 import { createAppearanceContext } from "@/lib/rendering/cellAppearance";
 import type { CellCoord, Puzzle } from "@/lib/game/types";
 
@@ -107,6 +108,12 @@ export function GameBoard({
             gridTemplateColumns: `repeat(${puzzle.cols}, ${cellSize}px)`,
           }}
         >
+          <WaterCanvasOverlay
+            puzzle={puzzle}
+            context={context}
+            cellSize={cellSize}
+            gap={GRID_GAP}
+          />
           {Array.from({ length: puzzle.rows }, (_, row) =>
             Array.from({ length: puzzle.cols }, (_, col) => (
               <CellView
