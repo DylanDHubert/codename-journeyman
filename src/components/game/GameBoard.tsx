@@ -2,8 +2,11 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 
+import { BeachCanvasOverlay } from "@/components/game/BeachCanvasOverlay";
 import { BridgeCanvasOverlay } from "@/components/game/BridgeCanvasOverlay";
 import { CellView } from "@/components/game/CellView";
+import { CliffCanvasOverlay } from "@/components/game/CliffCanvasOverlay";
+import { GrassCanvasOverlay } from "@/components/game/GrassCanvasOverlay";
 import { PathLineOverlay, type PathLineStyle } from "@/components/game/PathLineOverlay";
 import { WaterCanvasOverlay } from "@/components/game/WaterCanvasOverlay";
 import { createAppearanceContext } from "@/lib/rendering/cellAppearance";
@@ -110,6 +113,24 @@ export function GameBoard({
           }}
         >
           <WaterCanvasOverlay
+            puzzle={puzzle}
+            context={context}
+            cellSize={cellSize}
+            gap={GRID_GAP}
+          />
+          <BeachCanvasOverlay
+            puzzle={puzzle}
+            context={context}
+            cellSize={cellSize}
+            gap={GRID_GAP}
+          />
+          <GrassCanvasOverlay
+            puzzle={puzzle}
+            context={context}
+            cellSize={cellSize}
+            gap={GRID_GAP}
+          />
+          <CliffCanvasOverlay
             puzzle={puzzle}
             context={context}
             cellSize={cellSize}

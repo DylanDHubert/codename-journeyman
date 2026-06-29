@@ -8,9 +8,21 @@ import { bridgePlacementCost, isLandKind } from "@/lib/game/tiles";
 import type { Puzzle, TileKind } from "@/lib/game/types";
 import type { CellAppearance, OverlayKind } from "./types";
 import {
+  buildBeachSandField,
+  type BeachSandField,
+} from "./beachSand";
+import {
   buildBridgeWoodField,
   type BridgeWoodField,
 } from "./bridgeWood";
+import {
+  buildCliffRockField,
+  type CliffRockField,
+} from "./cliffRock";
+import {
+  buildGrassTerrainField,
+  type GrassTerrainField,
+} from "./grassTerrain";
 import {
   buildMarshSplotchField,
   type MarshSplotchField,
@@ -119,6 +131,54 @@ export function waterBaseForCell(
   };
 }
 
+export function beachBaseForCell(
+  row: number,
+  col: number,
+  context: AppearanceContext,
+): { rgb: { r: number; g: number; b: number } } | null {
+  const cell = context.puzzle.cells[row * context.puzzle.cols + col]!;
+
+  if (cell.kind !== "beach") {
+    return null;
+  }
+
+  return {
+    rgb: tileBaseRgb("beach", 0),
+  };
+}
+
+export function grassBaseForCell(
+  row: number,
+  col: number,
+  context: AppearanceContext,
+): { rgb: { r: number; g: number; b: number } } | null {
+  const cell = context.puzzle.cells[row * context.puzzle.cols + col]!;
+
+  if (cell.kind !== "grass") {
+    return null;
+  }
+
+  return {
+    rgb: tileBaseRgb("grass", 0),
+  };
+}
+
+export function cliffBaseForCell(
+  row: number,
+  col: number,
+  context: AppearanceContext,
+): { rgb: { r: number; g: number; b: number } } | null {
+  const cell = context.puzzle.cells[row * context.puzzle.cols + col]!;
+
+  if (cell.kind !== "cliff") {
+    return null;
+  }
+
+  return {
+    rgb: tileBaseRgb("cliff", 0),
+  };
+}
+
 export type AppearanceContext = {
   puzzle: Puzzle;
   bridges: Set<string>;
@@ -128,6 +188,9 @@ export type AppearanceContext = {
   maxDepth: number;
   waterNoise: WaterNoiseField;
   marshSplotch: MarshSplotchField;
+  beachSand: BeachSandField;
+  grassTerrain: GrassTerrainField;
+  cliffRock: CliffRockField;
   bridgeWood: BridgeWoodField;
 };
 
@@ -141,6 +204,9 @@ export function createAppearanceContext(
   const maxDepth = maxWaterDistance(terrainMaps);
   const waterNoise = buildWaterNoiseField(puzzle);
   const marshSplotch = buildMarshSplotchField(puzzle);
+  const beachSand = buildBeachSandField(puzzle);
+  const grassTerrain = buildGrassTerrainField(puzzle);
+  const cliffRock = buildCliffRockField(puzzle);
   const bridgeWood = buildBridgeWoodField(puzzle);
 
   return {
@@ -152,6 +218,9 @@ export function createAppearanceContext(
     maxDepth,
     waterNoise,
     marshSplotch,
+    beachSand,
+    grassTerrain,
+    cliffRock,
     bridgeWood,
   };
 }
@@ -203,6 +272,15 @@ export function appearanceForCell(
     if (isAnimatedWaterKind(cell.kind)) {
       // DRAWN BY WaterCanvasOverlay — KEEP CELL TRANSPARENT FOR SHIMMER/OVERLAYS
       backgroundColor = "transparent";
+    } else if (cell.kind === "beach") {
+      // DRAWN BY BeachCanvasOverlay
+      backgroundColor = "transparent";
+    } else if (cell.kind === "grass") {
+      // DRAWN BY GrassCanvasOverlay
+      backgroundColor = "transparent";
+    } else if (cell.kind === "cliff") {
+      // DRAWN BY CliffCanvasOverlay
+      backgroundColor = "transparent";
     } else {
       backgroundColor = tileBaseColor(cell.kind, depth);
     }
@@ -214,12 +292,6 @@ export function appearanceForCell(
       : undefined;
 
   let shimmer: string | undefined;
-  if (cell.kind === "beach") {
-    shimmer =
-      "linear-gradient(145deg, rgb(255 255 255 / 0.12), transparent 45%)";
-  } else if (cell.kind === "cliff") {
-    shimmer = "linear-gradient(180deg, rgb(255 255 255 / 0.06), transparent 40%)";
-  }
 
   const bridgeCostLabel =
     !hasBridge && (cell.kind === "marsh" || cell.kind === "ocean")
