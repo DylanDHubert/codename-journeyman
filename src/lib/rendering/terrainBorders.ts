@@ -5,7 +5,7 @@ import {
   type AppearanceContext,
 } from "@/lib/rendering/cellAppearance";
 import { terrainSurfaceRgb } from "@/lib/rendering/cellAppearance";
-import type { Puzzle } from "@/lib/game/types";
+import type { Puzzle, TileKind } from "@/lib/game/types";
 import { WATER_SUBCELLS } from "@/lib/rendering/waterNoise";
 
 type Rgb = { r: number; g: number; b: number };
@@ -48,9 +48,33 @@ function surfaceAt(
   return terrainSurfaceRgb(row, col, context);
 }
 
+function cellKindAt(puzzle: Puzzle, row: number, col: number): TileKind | null {
+  if (row < 0 || col < 0 || row >= puzzle.rows || col >= puzzle.cols) {
+    return null;
+  }
+
+  return puzzle.cells[row * puzzle.cols + col]!.kind;
+}
+
+function landWaterTransition(
+  puzzle: Puzzle,
+  context: AppearanceContext,
+  landRow: number,
+  landCol: number,
+): EdgeTransition {
+  const land = surfaceAt(puzzle, context, landRow, landCol);
+
+  if (cellKindAt(puzzle, landRow, landCol) === "cliff") {
+    return { mode: "land-solid", land };
+  }
+
+  return { mode: "land-tint", land };
+}
+
 type EdgeTransition =
   | { mode: "opaque"; primary: Rgb; secondary: Rgb }
   | { mode: "land-tint"; land: Rgb }
+  | { mode: "land-solid"; land: Rgb }
   | { mode: "skip" };
 
 function edgeTransition(
@@ -76,11 +100,11 @@ function edgeTransition(
   }
 
   if (waterA) {
-    return { mode: "land-tint", land: surfaceAt(puzzle, context, rowB, colB) };
+    return landWaterTransition(puzzle, context, rowB, colB);
   }
 
   if (waterB) {
-    return { mode: "land-tint", land: surfaceAt(puzzle, context, rowA, colA) };
+    return landWaterTransition(puzzle, context, rowA, colA);
   }
 
   return {
@@ -143,12 +167,15 @@ function fillDitherBetween(
       const blockRow = Math.floor((startY + row) / blockSize);
       const hash = ditherHash(blockCol, blockRow, seed);
 
-      if (transition.mode === "land-tint") {
+      if (transition.mode === "land-tint" || transition.mode === "land-solid") {
         if (hash <= 0.5) {
           continue;
         }
 
-        ctx.fillStyle = rgbaString(transition.land, LAND_TINT_ALPHA);
+        ctx.fillStyle =
+          transition.mode === "land-solid"
+            ? rgbString(transition.land)
+            : rgbaString(transition.land, LAND_TINT_ALPHA);
         ctx.fillRect(startX + col, startY + row, blockW, blockH);
         continue;
       }
