@@ -12,14 +12,19 @@ import {
   type BridgeWoodField,
 } from "./bridgeWood";
 import {
+  buildMarshSplotchField,
+  type MarshSplotchField,
+} from "./waterFeatures";
+import {
   buildWaterNoiseField,
   type WaterNoiseField,
 } from "./waterNoise";
 
 const SHALLOW_WATER = { r: 72, g: 176, b: 210 };
 const DEEP_WATER = { r: 12, g: 48, b: 92 };
-/** TURQUOISE TINT FOR MARSH — BLENDED ON TOP OF OCEAN DEPTH */
-const MARSH_TURQUOISE = { r: 48, g: 198, b: 188 };
+/** TURQUOISE-GREEN TINT FOR MARSH — BLENDED ON TOP OF OCEAN DEPTH */
+const MARSH_TURQUOISE = { r: 30, g: 188, b: 152 };
+const MARSH_GREEN_PUSH = { r: 46, g: 156, b: 88 };
 /** EXTRA SHADE FOR WHIRLPOOL — DARKER OCEAN */
 const WHIRLPOOL_SHADE = { r: 4, g: 24, b: 58 };
 const INTERIOR_LAND = { r: 88, g: 156, b: 72 };
@@ -64,7 +69,11 @@ function tileBaseRgb(
     case "cliff":
       return mixColorRgb(CLIFF_STONE, { r: 72, g: 64, b: 56 }, 0.4);
     case "marsh":
-      return mixColorRgb(oceanWaterRgb(depth), MARSH_TURQUOISE, 0.4);
+      return mixColorRgb(
+        mixColorRgb(oceanWaterRgb(depth), MARSH_TURQUOISE, 0.52),
+        MARSH_GREEN_PUSH,
+        0.2,
+      );
     case "whirlpool":
       return mixColorRgb(
         oceanWaterRgb(Math.min(1, depth + 0.2)),
@@ -118,6 +127,7 @@ export type AppearanceContext = {
   terrainMaps: ReturnType<typeof buildTerrainMaps>;
   maxDepth: number;
   waterNoise: WaterNoiseField;
+  marshSplotch: MarshSplotchField;
   bridgeWood: BridgeWoodField;
 };
 
@@ -130,6 +140,7 @@ export function createAppearanceContext(
   const terrainMaps = buildTerrainMaps(puzzle);
   const maxDepth = maxWaterDistance(terrainMaps);
   const waterNoise = buildWaterNoiseField(puzzle);
+  const marshSplotch = buildMarshSplotchField(puzzle);
   const bridgeWood = buildBridgeWoodField(puzzle);
 
   return {
@@ -140,6 +151,7 @@ export function createAppearanceContext(
     terrainMaps,
     maxDepth,
     waterNoise,
+    marshSplotch,
     bridgeWood,
   };
 }
@@ -202,13 +214,7 @@ export function appearanceForCell(
       : undefined;
 
   let shimmer: string | undefined;
-  if (cell.kind === "whirlpool" && !hasBridge) {
-    shimmer =
-      "radial-gradient(circle at 50% 50%, rgb(4 28 56 / 0.2), transparent 65%)";
-  } else if (cell.kind === "marsh" && !hasBridge) {
-    shimmer =
-      "linear-gradient(160deg, rgb(170 248 236 / 0.1), transparent 50%)";
-  } else if (cell.kind === "beach") {
+  if (cell.kind === "beach") {
     shimmer =
       "linear-gradient(145deg, rgb(255 255 255 / 0.12), transparent 45%)";
   } else if (cell.kind === "cliff") {

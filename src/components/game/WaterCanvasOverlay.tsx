@@ -4,6 +4,11 @@ import { useEffect, useRef, useState } from "react";
 
 import { waterBaseForCell, type AppearanceContext } from "@/lib/rendering/cellAppearance";
 import {
+  applyMarshSplotches,
+  drawWhirlpoolSpiral,
+  resolveWhirlpoolSpiralFrame,
+} from "@/lib/rendering/waterFeatures";
+import {
   modulateWaterColorRgb,
   WATER_SUBCELLS,
   type WaterNoiseField,
@@ -68,7 +73,28 @@ export function drawWaterSurface(
       for (let subRow = 0; subRow < subcells; subRow += 1) {
         for (let subCol = 0; subCol < subcells; subCol += 1) {
           const noise = waterNoise.sample(waterPhase, row, col, subRow, subCol);
-          const { r, g, b } = modulateWaterColorRgb(base.rgb, noise, base.kind);
+          let { r, g, b } = modulateWaterColorRgb(base.rgb, noise, base.kind);
+
+          if (base.kind === "marsh") {
+            const greenStrength = context.marshSplotch.greenStrength(
+              row,
+              col,
+              subRow,
+              subCol,
+            );
+            const yellowStrength = context.marshSplotch.yellowStrength(
+              row,
+              col,
+              subRow,
+              subCol,
+            );
+            ({ r, g, b } = applyMarshSplotches(
+              { r, g, b },
+              greenStrength,
+              yellowStrength,
+            ));
+          }
+
           ctx.fillStyle = `rgb(${r} ${g} ${b})`;
           ctx.fillRect(
             originX + subCol * subSize,
@@ -77,6 +103,16 @@ export function drawWaterSurface(
             subSize,
           );
         }
+      }
+
+      if (base.kind === "whirlpool") {
+        drawWhirlpoolSpiral(
+          ctx,
+          originX,
+          originY,
+          cellSize,
+          resolveWhirlpoolSpiralFrame(waterPhase),
+        );
       }
     }
   }
