@@ -8,18 +8,23 @@ import { bridgePlacementCost, isLandKind } from "@/lib/game/tiles";
 import type { Puzzle, TileKind } from "@/lib/game/types";
 import type { CellAppearance, OverlayKind } from "./types";
 import {
+  buildBridgeWoodField,
+  type BridgeWoodField,
+} from "./bridgeWood";
+import {
   buildWaterNoiseField,
   type WaterNoiseField,
 } from "./waterNoise";
 
 const SHALLOW_WATER = { r: 72, g: 176, b: 210 };
 const DEEP_WATER = { r: 12, g: 48, b: 92 };
-const MARSH_GREEN = { r: 58, g: 130, b: 98 };
-const WHIRLPOOL = { r: 36, g: 24, b: 72 };
+/** TURQUOISE TINT FOR MARSH — BLENDED ON TOP OF OCEAN DEPTH */
+const MARSH_TURQUOISE = { r: 48, g: 198, b: 188 };
+/** EXTRA SHADE FOR WHIRLPOOL — DARKER OCEAN */
+const WHIRLPOOL_SHADE = { r: 4, g: 24, b: 58 };
 const INTERIOR_LAND = { r: 88, g: 156, b: 72 };
 const BEACH_SAND = { r: 232, g: 210, b: 148 };
 const CLIFF_STONE = { r: 110, g: 98, b: 86 };
-const BRIDGE_WOOD = "rgb(168 118 62)";
 const PATH_GLOW = { r: 255, g: 244, b: 180 };
 
 function mixColorRgb(
@@ -43,6 +48,10 @@ function mixColor(
   return `rgb(${mixed.r} ${mixed.g} ${mixed.b})`;
 }
 
+function oceanWaterRgb(depth: number): { r: number; g: number; b: number } {
+  return mixColorRgb(SHALLOW_WATER, DEEP_WATER, depth);
+}
+
 function tileBaseRgb(
   kind: TileKind,
   depth: number,
@@ -55,12 +64,16 @@ function tileBaseRgb(
     case "cliff":
       return mixColorRgb(CLIFF_STONE, { r: 72, g: 64, b: 56 }, 0.4);
     case "marsh":
-      return mixColorRgb(MARSH_GREEN, SHALLOW_WATER, 0.35);
+      return mixColorRgb(oceanWaterRgb(depth), MARSH_TURQUOISE, 0.4);
     case "whirlpool":
-      return mixColorRgb(WHIRLPOOL, DEEP_WATER, 0.25);
+      return mixColorRgb(
+        oceanWaterRgb(Math.min(1, depth + 0.2)),
+        WHIRLPOOL_SHADE,
+        0.5,
+      );
     case "ocean":
     default:
-      return mixColorRgb(SHALLOW_WATER, DEEP_WATER, depth);
+      return oceanWaterRgb(depth);
   }
 }
 
@@ -105,6 +118,7 @@ export type AppearanceContext = {
   terrainMaps: ReturnType<typeof buildTerrainMaps>;
   maxDepth: number;
   waterNoise: WaterNoiseField;
+  bridgeWood: BridgeWoodField;
 };
 
 export function createAppearanceContext(
@@ -116,6 +130,7 @@ export function createAppearanceContext(
   const terrainMaps = buildTerrainMaps(puzzle);
   const maxDepth = maxWaterDistance(terrainMaps);
   const waterNoise = buildWaterNoiseField(puzzle);
+  const bridgeWood = buildBridgeWoodField(puzzle);
 
   return {
     puzzle,
@@ -125,6 +140,7 @@ export function createAppearanceContext(
     terrainMaps,
     maxDepth,
     waterNoise,
+    bridgeWood,
   };
 }
 
@@ -166,7 +182,8 @@ export function appearanceForCell(
   let backgroundColor = "#000";
 
   if (hasBridge) {
-    backgroundColor = BRIDGE_WOOD;
+    // DRAWN BY BridgeCanvasOverlay — KEEP CELL TRANSPARENT FOR OVERLAYS
+    backgroundColor = "transparent";
   } else {
     const distance = terrainMaps.distanceFromLand[row]![col]!;
     const depth = waterDepthAt(distance, maxDepth);
@@ -187,10 +204,10 @@ export function appearanceForCell(
   let shimmer: string | undefined;
   if (cell.kind === "whirlpool" && !hasBridge) {
     shimmer =
-      "radial-gradient(circle at 50% 50%, rgb(180 140 255 / 0.18), transparent 65%)";
+      "radial-gradient(circle at 50% 50%, rgb(4 28 56 / 0.2), transparent 65%)";
   } else if (cell.kind === "marsh" && !hasBridge) {
     shimmer =
-      "linear-gradient(160deg, rgb(255 255 255 / 0.07), transparent 50%)";
+      "linear-gradient(160deg, rgb(170 248 236 / 0.1), transparent 50%)";
   } else if (cell.kind === "beach") {
     shimmer =
       "linear-gradient(145deg, rgb(255 255 255 / 0.12), transparent 45%)";

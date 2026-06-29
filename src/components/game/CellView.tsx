@@ -49,7 +49,6 @@ export function CellView({
         interactive && bridgeable
           ? "cursor-pointer hover:brightness-110 active:scale-95"
           : "cursor-default",
-        appearance.overlay === "bridge" ? "ring-1 ring-amber-900/40 ring-inset" : "",
         appearance.overlay === "path" ? "brightness-110" : "",
         context.puzzle.cells[row * context.puzzle.cols + col]?.kind === "whirlpool"
           ? "overflow-hidden"
@@ -75,10 +74,6 @@ export function CellView({
         <span className="pointer-events-none absolute inset-0 flex items-center justify-center text-sm font-bold text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">
           {label}
         </span>
-      ) : null}
-
-      {appearance.overlay === "bridge" ? (
-        <span className="pointer-events-none absolute inset-x-1 top-1/2 h-1 -translate-y-1/2 rounded-full bg-amber-950/25" />
       ) : null}
 
       {appearance.bridgeCostLabel === 2 && appearance.overlay !== "bridge" ? (

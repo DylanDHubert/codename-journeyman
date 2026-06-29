@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 
+import { BridgeCanvasOverlay } from "@/components/game/BridgeCanvasOverlay";
 import { CellView } from "@/components/game/CellView";
 import { PathLineOverlay, type PathLineStyle } from "@/components/game/PathLineOverlay";
 import { WaterCanvasOverlay } from "@/components/game/WaterCanvasOverlay";
@@ -109,6 +110,12 @@ export function GameBoard({
           }}
         >
           <WaterCanvasOverlay
+            puzzle={puzzle}
+            context={context}
+            cellSize={cellSize}
+            gap={GRID_GAP}
+          />
+          <BridgeCanvasOverlay
             puzzle={puzzle}
             context={context}
             cellSize={cellSize}

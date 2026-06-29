@@ -96,9 +96,9 @@ export function buildWaterNoiseField(puzzle: Puzzle): WaterNoiseField {
 function noiseStrength(kind: TileKind): number {
   switch (kind) {
     case "marsh":
-      return 0.14;
+      return 0.3;
     case "whirlpool":
-      return 0.1;
+      return 0.32;
     case "ocean":
     default:
       return 0.35;
