@@ -17,17 +17,7 @@ type GrassCanvasOverlayProps = {
   gap: number;
 };
 
-function isGrassCell(
-  puzzle: Puzzle,
-  bridges: Set<string>,
-  row: number,
-  col: number,
-): boolean {
-  const key = `${row},${col}`;
-  if (bridges.has(key)) {
-    return false;
-  }
-
+function isGrassCell(puzzle: Puzzle, row: number, col: number): boolean {
   return puzzle.cells[row * puzzle.cols + col]?.kind === "grass";
 }
 
@@ -48,7 +38,7 @@ export function drawGrassSurface(
 
   for (let row = 0; row < rows; row += 1) {
     for (let col = 0; col < cols; col += 1) {
-      if (!isGrassCell(puzzle, context.bridges, row, col)) {
+      if (!isGrassCell(puzzle, row, col)) {
         continue;
       }
 

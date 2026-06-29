@@ -17,17 +17,7 @@ type CliffCanvasOverlayProps = {
   gap: number;
 };
 
-function isCliffCell(
-  puzzle: Puzzle,
-  bridges: Set<string>,
-  row: number,
-  col: number,
-): boolean {
-  const key = `${row},${col}`;
-  if (bridges.has(key)) {
-    return false;
-  }
-
+function isCliffCell(puzzle: Puzzle, row: number, col: number): boolean {
   return puzzle.cells[row * puzzle.cols + col]?.kind === "cliff";
 }
 
@@ -48,7 +38,7 @@ export function drawCliffSurface(
 
   for (let row = 0; row < rows; row += 1) {
     for (let col = 0; col < cols; col += 1) {
-      if (!isCliffCell(puzzle, context.bridges, row, col)) {
+      if (!isCliffCell(puzzle, row, col)) {
         continue;
       }
 

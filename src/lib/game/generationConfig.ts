@@ -32,20 +32,20 @@ export const GRID_LIMITS = {
 
 /** PORTRAIT-FRIENDLY DEFAULT — TALLER THAN WIDE */
 export const DEFAULT_GENERATION_CONFIG: GenerationConfig = {
-  grid: { rows: 16, cols: 8 },
+  grid: { rows: 22, cols: 14 },
   noise: {
     landThreshold: 0.35,
-    falloffStrength: 0,
-    falloffRadius: 0.47,
-    octave1Scale: 0.15,
+    falloffStrength: 0.05,
+    falloffRadius: 1,
+    octave1Scale: 0.17,
     octave2Scale: 0.16,
-    octave2Weight: 0.6,
+    octave2Weight: 0.7,
     octave3Scale: 0.32,
-    octave3Weight: 0.55,
+    octave3Weight: 0.3,
   },
   minPar: 5,
-  maxPar: 18,
-  maxAttempts: 24,
+  maxPar: 15,
+  maxAttempts: 32,
 };
 
 export const GENERATION_PRESETS: Record<string, GenerationConfig> = {

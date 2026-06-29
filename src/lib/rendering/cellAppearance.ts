@@ -112,6 +112,19 @@ function isAnimatedWaterKind(kind: TileKind): boolean {
   return kind === "ocean" || kind === "marsh" || kind === "whirlpool";
 }
 
+/** UNDERLYING TILE — INCLUDES BRIDGE CELLS FOR BACKGROUND PAINTING */
+export function isAnimatedWaterTile(
+  puzzle: Puzzle,
+  row: number,
+  col: number,
+): boolean {
+  if (row < 0 || col < 0 || row >= puzzle.rows || col >= puzzle.cols) {
+    return false;
+  }
+
+  return isAnimatedWaterKind(puzzle.cells[row * puzzle.cols + col]!.kind);
+}
+
 export function hasBridgeAt(
   bridges: Set<string>,
   row: number,

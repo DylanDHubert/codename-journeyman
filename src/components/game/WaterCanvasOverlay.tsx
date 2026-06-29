@@ -3,8 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 
 import {
-  hasBridgeAt,
-  isWaterCell,
+  isAnimatedWaterTile,
   oceanWaterRgbForCell,
   waterBaseForCell,
   type AppearanceContext,
@@ -32,15 +31,6 @@ type WaterCanvasOverlayProps = {
 };
 
 const DEFAULT_FRAME_MS = 420;
-
-function isAnimatedWaterCell(
-  puzzle: Puzzle,
-  bridges: Set<string>,
-  row: number,
-  col: number,
-): boolean {
-  return isWaterCell(puzzle, bridges, row, col);
-}
 
 type TransitionEdge = {
   edgeSubRow: number;
@@ -189,15 +179,8 @@ function drawWaterGaps(
 
   for (let row = 0; row < rows; row += 1) {
     for (let col = 0; col < cols - 1; col += 1) {
-      if (
-        hasBridgeAt(context.bridges, row, col) ||
-        hasBridgeAt(context.bridges, row, col + 1)
-      ) {
-        continue;
-      }
-
-      const leftWater = isWaterCell(puzzle, context.bridges, row, col);
-      const rightWater = isWaterCell(puzzle, context.bridges, row, col + 1);
+      const leftWater = isAnimatedWaterTile(puzzle, row, col);
+      const rightWater = isAnimatedWaterTile(puzzle, row, col + 1);
       if (!leftWater && !rightWater) {
         continue;
       }
@@ -226,15 +209,8 @@ function drawWaterGaps(
 
   for (let row = 0; row < rows - 1; row += 1) {
     for (let col = 0; col < cols; col += 1) {
-      if (
-        hasBridgeAt(context.bridges, row, col) ||
-        hasBridgeAt(context.bridges, row + 1, col)
-      ) {
-        continue;
-      }
-
-      const topWater = isWaterCell(puzzle, context.bridges, row, col);
-      const bottomWater = isWaterCell(puzzle, context.bridges, row + 1, col);
+      const topWater = isAnimatedWaterTile(puzzle, row, col);
+      const bottomWater = isAnimatedWaterTile(puzzle, row + 1, col);
       if (!topWater && !bottomWater) {
         continue;
       }
@@ -270,12 +246,8 @@ function drawWaterGaps(
         { row: row + 1, col: col + 1 },
       ];
 
-      if (cells.some(({ row: r, col: c }) => hasBridgeAt(context.bridges, r, c))) {
-        continue;
-      }
-
       const waterCell = cells.find(({ row: r, col: c }) =>
-        isWaterCell(puzzle, context.bridges, r, c),
+        isAnimatedWaterTile(puzzle, r, c),
       );
       if (!waterCell) {
         continue;
@@ -320,7 +292,7 @@ export function drawWaterSurface(
 
   for (let row = 0; row < rows; row += 1) {
     for (let col = 0; col < cols; col += 1) {
-      if (!isAnimatedWaterCell(puzzle, context.bridges, row, col)) {
+      if (!isAnimatedWaterTile(puzzle, row, col)) {
         continue;
       }
 

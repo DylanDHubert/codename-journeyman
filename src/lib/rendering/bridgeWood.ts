@@ -136,39 +136,49 @@ export function collectBridgePylonCorners(
   return [...corners.values()];
 }
 
+function fillPylonSquare(
+  ctx: CanvasRenderingContext2D,
+  halfSize: number,
+): void {
+  const size = Math.round(halfSize * 2);
+  const origin = -Math.round(halfSize);
+  ctx.fillRect(origin, origin, size, size);
+}
+
+function strokePylonSquare(
+  ctx: CanvasRenderingContext2D,
+  halfSize: number,
+): void {
+  const size = Math.round(halfSize * 2);
+  const origin = -Math.round(halfSize);
+  ctx.strokeRect(origin, origin, size, size);
+}
+
 export function drawBridgePylon(
   ctx: CanvasRenderingContext2D,
   x: number,
   y: number,
   cellSize: number,
 ): void {
-  const outerRadius = Math.max(3, Math.round(cellSize * 0.13));
-  const lineWidth = Math.max(1, Math.round(outerRadius * 0.16));
+  const outerHalf = Math.max(6, Math.round(cellSize * 0.26));
+  const lineWidth = Math.max(1, Math.round(outerHalf * 0.16));
 
   ctx.save();
-  ctx.translate(x, y);
+  ctx.translate(Math.round(x), Math.round(y));
 
   ctx.fillStyle = "rgb(74 44 20)";
-  ctx.beginPath();
-  ctx.arc(0, 0, outerRadius, 0, Math.PI * 2);
-  ctx.fill();
+  fillPylonSquare(ctx, outerHalf);
 
   ctx.fillStyle = "rgb(132 86 44)";
-  ctx.beginPath();
-  ctx.arc(0, 0, outerRadius * 0.78, 0, Math.PI * 2);
-  ctx.fill();
+  fillPylonSquare(ctx, outerHalf * 0.78);
 
   ctx.fillStyle = "rgb(186 132 72)";
-  ctx.beginPath();
-  ctx.arc(0, 0, outerRadius * 0.52, 0, Math.PI * 2);
-  ctx.fill();
+  fillPylonSquare(ctx, outerHalf * 0.52);
 
   ctx.fillStyle = "rgb(58 34 14)";
-  ctx.beginPath();
-  ctx.arc(0, 0, outerRadius * 0.24, 0, Math.PI * 2);
-  ctx.fill();
+  fillPylonSquare(ctx, outerHalf * 0.24);
 
-  const ringRadii = [0.92, 0.72, 0.54, 0.36];
+  const ringScales = [0.92, 0.72, 0.54, 0.36];
   const ringColors = [
     "rgb(48 28 12)",
     "rgb(98 62 30)",
@@ -176,12 +186,10 @@ export function drawBridgePylon(
     "rgb(72 44 20)",
   ];
 
-  for (let i = 0; i < ringRadii.length; i += 1) {
+  for (let i = 0; i < ringScales.length; i += 1) {
     ctx.strokeStyle = ringColors[i]!;
     ctx.lineWidth = lineWidth;
-    ctx.beginPath();
-    ctx.arc(0, 0, outerRadius * ringRadii[i]!, 0, Math.PI * 2);
-    ctx.stroke();
+    strokePylonSquare(ctx, outerHalf * ringScales[i]!);
   }
 
   ctx.restore();

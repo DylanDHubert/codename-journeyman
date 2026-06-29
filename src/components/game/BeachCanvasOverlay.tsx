@@ -17,17 +17,7 @@ type BeachCanvasOverlayProps = {
   gap: number;
 };
 
-function isBeachCell(
-  puzzle: Puzzle,
-  bridges: Set<string>,
-  row: number,
-  col: number,
-): boolean {
-  const key = `${row},${col}`;
-  if (bridges.has(key)) {
-    return false;
-  }
-
+function isBeachCell(puzzle: Puzzle, row: number, col: number): boolean {
   return puzzle.cells[row * puzzle.cols + col]?.kind === "beach";
 }
 
@@ -48,7 +38,7 @@ export function drawBeachSurface(
 
   for (let row = 0; row < rows; row += 1) {
     for (let col = 0; col < cols; col += 1) {
-      if (!isBeachCell(puzzle, context.bridges, row, col)) {
+      if (!isBeachCell(puzzle, row, col)) {
         continue;
       }
 
