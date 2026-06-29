@@ -45,7 +45,7 @@ export function CellView({
       disabled={!interactive || !bridgeable}
       onClick={() => onToggle?.(row, col)}
       className={[
-        "relative border border-black/10 transition-transform duration-100",
+        "relative transition-transform duration-100",
         interactive && bridgeable
           ? "cursor-pointer hover:brightness-110 active:scale-95"
           : "cursor-default",

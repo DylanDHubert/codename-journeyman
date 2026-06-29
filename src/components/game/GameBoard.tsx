@@ -8,8 +8,10 @@ import { CellView } from "@/components/game/CellView";
 import { CliffCanvasOverlay } from "@/components/game/CliffCanvasOverlay";
 import { GrassCanvasOverlay } from "@/components/game/GrassCanvasOverlay";
 import { PathLineOverlay, type PathLineStyle } from "@/components/game/PathLineOverlay";
+import { TerrainBorderOverlay } from "@/components/game/TerrainBorderOverlay";
 import { WaterCanvasOverlay } from "@/components/game/WaterCanvasOverlay";
 import { createAppearanceContext } from "@/lib/rendering/cellAppearance";
+import { terrainGridGap } from "@/lib/rendering/terrainBorders";
 import type { CellCoord, Puzzle } from "@/lib/game/types";
 
 type GameBoardProps = {
@@ -25,7 +27,6 @@ type GameBoardProps = {
 
 const MAX_CELL = 44;
 const MIN_CELL = 24;
-const GRID_GAP = 2;
 const BOARD_PADDING = 24;
 
 export function GameBoard({
@@ -40,6 +41,7 @@ export function GameBoard({
 }: GameBoardProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [cellSize, setCellSize] = useState(MAX_CELL);
+  const gridGap = terrainGridGap(cellSize);
 
   const context = useMemo(
     () => createAppearanceContext(puzzle, bridges, pathKeys, showComponents),
@@ -82,13 +84,21 @@ export function GameBoard({
       const viewportHeight = window.innerHeight;
       const heightBudget = Math.min(viewportHeight * 0.58, 640);
 
-      const fromWidth =
-        (width - GRID_GAP * (puzzle.cols - 1)) / puzzle.cols;
-      const fromHeight =
-        (heightBudget - BOARD_PADDING - GRID_GAP * (puzzle.rows - 1)) /
+      let gap = terrainGridGap(MAX_CELL);
+      let fromWidth =
+        (width - gap * (puzzle.cols - 1)) / puzzle.cols;
+      let fromHeight =
+        (heightBudget - BOARD_PADDING - gap * (puzzle.rows - 1)) /
         puzzle.rows;
 
-      const next = Math.floor(Math.min(fromWidth, fromHeight, MAX_CELL));
+      let next = Math.floor(Math.min(fromWidth, fromHeight, MAX_CELL));
+      next = Math.max(MIN_CELL, next);
+      gap = terrainGridGap(next);
+      fromWidth = (width - gap * (puzzle.cols - 1)) / puzzle.cols;
+      fromHeight =
+        (heightBudget - BOARD_PADDING - gap * (puzzle.rows - 1)) /
+        puzzle.rows;
+      next = Math.floor(Math.min(fromWidth, fromHeight, MAX_CELL));
       setCellSize(Math.max(MIN_CELL, next));
     };
 
@@ -107,40 +117,47 @@ export function GameBoard({
     <div ref={containerRef} className="w-full max-w-md lg:max-w-none lg:flex-1">
       <div className="mx-auto w-fit max-w-full rounded-2xl border border-sky-950/20 bg-sky-950/10 p-3 shadow-xl shadow-sky-950/20">
         <div
-          className="relative grid gap-0.5"
+          className="relative grid"
           style={{
             gridTemplateColumns: `repeat(${puzzle.cols}, ${cellSize}px)`,
+            gap: gridGap,
           }}
         >
           <WaterCanvasOverlay
             puzzle={puzzle}
             context={context}
             cellSize={cellSize}
-            gap={GRID_GAP}
+            gap={gridGap}
           />
           <BeachCanvasOverlay
             puzzle={puzzle}
             context={context}
             cellSize={cellSize}
-            gap={GRID_GAP}
+            gap={gridGap}
           />
           <GrassCanvasOverlay
             puzzle={puzzle}
             context={context}
             cellSize={cellSize}
-            gap={GRID_GAP}
+            gap={gridGap}
           />
           <CliffCanvasOverlay
             puzzle={puzzle}
             context={context}
             cellSize={cellSize}
-            gap={GRID_GAP}
+            gap={gridGap}
+          />
+          <TerrainBorderOverlay
+            puzzle={puzzle}
+            context={context}
+            cellSize={cellSize}
+            gap={gridGap}
           />
           <BridgeCanvasOverlay
             puzzle={puzzle}
             context={context}
             cellSize={cellSize}
-            gap={GRID_GAP}
+            gap={gridGap}
           />
           {Array.from({ length: puzzle.rows }, (_, row) =>
             Array.from({ length: puzzle.cols }, (_, col) => (
@@ -160,7 +177,7 @@ export function GameBoard({
             rows={puzzle.rows}
             cols={puzzle.cols}
             cellSize={cellSize}
-            gap={GRID_GAP}
+            gap={gridGap}
           />
         </div>
       </div>

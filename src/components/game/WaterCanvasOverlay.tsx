@@ -2,7 +2,14 @@
 
 import { useEffect, useRef, useState } from "react";
 
-import { waterBaseForCell, type AppearanceContext } from "@/lib/rendering/cellAppearance";
+import {
+  hasBridgeAt,
+  isWaterCell,
+  oceanWaterRgbForCell,
+  waterBaseForCell,
+  type AppearanceContext,
+} from "@/lib/rendering/cellAppearance";
+import type { TileKind } from "@/lib/game/types";
 import {
   applyMarshSplotches,
   drawWhirlpoolSpiral,
@@ -13,6 +20,7 @@ import {
   WATER_SUBCELLS,
   type WaterNoiseField,
 } from "@/lib/rendering/waterNoise";
+import { terrainTexturePixelSize } from "@/lib/rendering/terrainBorders";
 import type { Puzzle } from "@/lib/game/types";
 
 type WaterCanvasOverlayProps = {
@@ -31,13 +39,267 @@ function isAnimatedWaterCell(
   row: number,
   col: number,
 ): boolean {
-  const key = `${row},${col}`;
-  if (bridges.has(key)) {
-    return false;
+  return isWaterCell(puzzle, bridges, row, col);
+}
+
+type TransitionEdge = {
+  edgeSubRow: number;
+  edgeSubCol: number;
+};
+
+function isOuterTransitionEdge(edge: TransitionEdge): boolean {
+  return (
+    edge.edgeSubRow === WATER_SUBCELLS - 1 ||
+    edge.edgeSubCol === WATER_SUBCELLS - 1
+  );
+}
+
+function paintWaterBlock(
+  ctx: CanvasRenderingContext2D,
+  context: AppearanceContext,
+  waterNoise: WaterNoiseField,
+  waterPhase: number,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  row: number,
+  col: number,
+  subRow: number,
+  subCol: number,
+  transitionEdge?: TransitionEdge,
+): void {
+  const base = waterBaseForCell(row, col, context);
+  if (!base) {
+    return;
   }
 
-  const kind = puzzle.cells[row * puzzle.cols + col]?.kind;
-  return kind === "ocean" || kind === "marsh" || kind === "whirlpool";
+  const softenTransition =
+    transitionEdge !== undefined &&
+    isOuterTransitionEdge(transitionEdge) &&
+    (base.kind === "marsh" || base.kind === "whirlpool");
+
+  let paintRgb = base.rgb;
+  let paintKind: TileKind = base.kind;
+
+  if (softenTransition) {
+    paintRgb = oceanWaterRgbForCell(row, col, context);
+    paintKind = "ocean";
+  }
+
+  const noise = waterNoise.sample(waterPhase, row, col, subRow, subCol);
+  let { r, g, b } = modulateWaterColorRgb(paintRgb, noise, paintKind);
+
+  if (base.kind === "marsh" && !softenTransition) {
+    const greenStrength = context.marshSplotch.greenStrength(
+      row,
+      col,
+      subRow,
+      subCol,
+    );
+    const yellowStrength = context.marshSplotch.yellowStrength(
+      row,
+      col,
+      subRow,
+      subCol,
+    );
+    ({ r, g, b } = applyMarshSplotches(
+      { r, g, b },
+      greenStrength,
+      yellowStrength,
+    ));
+  }
+
+  ctx.fillStyle = `rgb(${r} ${g} ${b})`;
+  ctx.fillRect(x, y, width, height);
+}
+
+function drawWaterGapRegion(
+  ctx: CanvasRenderingContext2D,
+  context: AppearanceContext,
+  waterNoise: WaterNoiseField,
+  waterPhase: number,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  sourceRow: number,
+  sourceCol: number,
+  edgeSubRow: number,
+  edgeSubCol: number,
+  cellSize: number,
+  stride: number,
+  blockSize: number,
+): void {
+  const startX = Math.round(x);
+  const startY = Math.round(y);
+  const subSize = Math.max(1, Math.floor(cellSize / WATER_SUBCELLS));
+  const originX = sourceCol * stride;
+  const originY = sourceRow * stride;
+
+  for (let row = 0; row < height; row += blockSize) {
+    const blockH = Math.min(blockSize, height - row);
+
+    for (let col = 0; col < width; col += blockSize) {
+      const blockW = Math.min(blockSize, width - col);
+      const subRow = Math.min(
+        WATER_SUBCELLS - 1,
+        Math.max(0, Math.floor((startY + row - originY) / subSize)),
+      );
+      const subCol = Math.min(
+        WATER_SUBCELLS - 1,
+        Math.max(0, Math.floor((startX + col - originX) / subSize)),
+      );
+      const isHorizontalStripe = width < height;
+      const isVerticalStripe = height < width;
+      const sampleSubRow = isHorizontalStripe ? subRow : edgeSubRow;
+      const sampleSubCol = isVerticalStripe ? subCol : edgeSubCol;
+
+      paintWaterBlock(
+        ctx,
+        context,
+        waterNoise,
+        waterPhase,
+        startX + col,
+        startY + row,
+        blockW,
+        blockH,
+        sourceRow,
+        sourceCol,
+        sampleSubRow,
+        sampleSubCol,
+        { edgeSubRow, edgeSubCol },
+      );
+    }
+  }
+}
+
+function drawWaterGaps(
+  ctx: CanvasRenderingContext2D,
+  puzzle: Puzzle,
+  context: AppearanceContext,
+  waterNoise: WaterNoiseField,
+  waterPhase: number,
+  cellSize: number,
+  gap: number,
+): void {
+  const { rows, cols } = puzzle;
+  const stride = cellSize + gap;
+  const blockSize = terrainTexturePixelSize(cellSize);
+
+  for (let row = 0; row < rows; row += 1) {
+    for (let col = 0; col < cols - 1; col += 1) {
+      if (
+        hasBridgeAt(context.bridges, row, col) ||
+        hasBridgeAt(context.bridges, row, col + 1)
+      ) {
+        continue;
+      }
+
+      const leftWater = isWaterCell(puzzle, context.bridges, row, col);
+      const rightWater = isWaterCell(puzzle, context.bridges, row, col + 1);
+      if (!leftWater && !rightWater) {
+        continue;
+      }
+
+      const sourceCol = leftWater ? col : col + 1;
+
+      drawWaterGapRegion(
+        ctx,
+        context,
+        waterNoise,
+        waterPhase,
+        col * stride + cellSize,
+        row * stride,
+        gap,
+        cellSize,
+        row,
+        sourceCol,
+        0,
+        leftWater ? WATER_SUBCELLS - 1 : 0,
+        cellSize,
+        stride,
+        blockSize,
+      );
+    }
+  }
+
+  for (let row = 0; row < rows - 1; row += 1) {
+    for (let col = 0; col < cols; col += 1) {
+      if (
+        hasBridgeAt(context.bridges, row, col) ||
+        hasBridgeAt(context.bridges, row + 1, col)
+      ) {
+        continue;
+      }
+
+      const topWater = isWaterCell(puzzle, context.bridges, row, col);
+      const bottomWater = isWaterCell(puzzle, context.bridges, row + 1, col);
+      if (!topWater && !bottomWater) {
+        continue;
+      }
+
+      const sourceRow = topWater ? row : row + 1;
+
+      drawWaterGapRegion(
+        ctx,
+        context,
+        waterNoise,
+        waterPhase,
+        col * stride,
+        row * stride + cellSize,
+        cellSize,
+        gap,
+        sourceRow,
+        col,
+        topWater ? WATER_SUBCELLS - 1 : 0,
+        0,
+        cellSize,
+        stride,
+        blockSize,
+      );
+    }
+  }
+
+  for (let row = 0; row < rows - 1; row += 1) {
+    for (let col = 0; col < cols - 1; col += 1) {
+      const cells = [
+        { row, col },
+        { row, col: col + 1 },
+        { row: row + 1, col },
+        { row: row + 1, col: col + 1 },
+      ];
+
+      if (cells.some(({ row: r, col: c }) => hasBridgeAt(context.bridges, r, c))) {
+        continue;
+      }
+
+      const waterCell = cells.find(({ row: r, col: c }) =>
+        isWaterCell(puzzle, context.bridges, r, c),
+      );
+      if (!waterCell) {
+        continue;
+      }
+
+      drawWaterGapRegion(
+        ctx,
+        context,
+        waterNoise,
+        waterPhase,
+        col * stride + cellSize,
+        row * stride + cellSize,
+        gap,
+        gap,
+        waterCell.row,
+        waterCell.col,
+        waterCell.row === row ? WATER_SUBCELLS - 1 : 0,
+        waterCell.col === col ? WATER_SUBCELLS - 1 : 0,
+        cellSize,
+        stride,
+        blockSize,
+      );
+    }
+  }
 }
 
 export function drawWaterSurface(
@@ -72,35 +334,19 @@ export function drawWaterSurface(
 
       for (let subRow = 0; subRow < subcells; subRow += 1) {
         for (let subCol = 0; subCol < subcells; subCol += 1) {
-          const noise = waterNoise.sample(waterPhase, row, col, subRow, subCol);
-          let { r, g, b } = modulateWaterColorRgb(base.rgb, noise, base.kind);
-
-          if (base.kind === "marsh") {
-            const greenStrength = context.marshSplotch.greenStrength(
-              row,
-              col,
-              subRow,
-              subCol,
-            );
-            const yellowStrength = context.marshSplotch.yellowStrength(
-              row,
-              col,
-              subRow,
-              subCol,
-            );
-            ({ r, g, b } = applyMarshSplotches(
-              { r, g, b },
-              greenStrength,
-              yellowStrength,
-            ));
-          }
-
-          ctx.fillStyle = `rgb(${r} ${g} ${b})`;
-          ctx.fillRect(
+          paintWaterBlock(
+            ctx,
+            context,
+            waterNoise,
+            waterPhase,
             originX + subCol * subSize,
             originY + subRow * subSize,
             subSize,
             subSize,
+            row,
+            col,
+            subRow,
+            subCol,
           );
         }
       }
@@ -116,6 +362,16 @@ export function drawWaterSurface(
       }
     }
   }
+
+  drawWaterGaps(
+    ctx,
+    puzzle,
+    context,
+    waterNoise,
+    waterPhase,
+    cellSize,
+    gap,
+  );
 }
 
 export function WaterCanvasOverlay({

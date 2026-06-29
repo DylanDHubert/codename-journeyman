@@ -44,6 +44,8 @@ const BEACH_SAND = { r: 232, g: 210, b: 148 };
 const CLIFF_STONE = { r: 110, g: 98, b: 86 };
 const PATH_GLOW = { r: 255, g: 244, b: 180 };
 
+const BRIDGE_WOOD_RGB = { r: 168, g: 118, b: 62 };
+
 function mixColorRgb(
   a: { r: number; g: number; b: number },
   b: { r: number; g: number; b: number },
@@ -108,6 +110,62 @@ function tileBaseColor(
 
 function isAnimatedWaterKind(kind: TileKind): boolean {
   return kind === "ocean" || kind === "marsh" || kind === "whirlpool";
+}
+
+export function hasBridgeAt(
+  bridges: Set<string>,
+  row: number,
+  col: number,
+): boolean {
+  return bridges.has(`${row},${col}`);
+}
+
+export function isWaterCell(
+  puzzle: Puzzle,
+  bridges: Set<string>,
+  row: number,
+  col: number,
+): boolean {
+  if (row < 0 || col < 0 || row >= puzzle.rows || col >= puzzle.cols) {
+    return false;
+  }
+
+  if (hasBridgeAt(bridges, row, col)) {
+    return false;
+  }
+
+  return isAnimatedWaterKind(puzzle.cells[row * puzzle.cols + col]!.kind);
+}
+
+export function terrainSurfaceRgb(
+  row: number,
+  col: number,
+  context: AppearanceContext,
+): { r: number; g: number; b: number } {
+  const { puzzle, bridges, terrainMaps, maxDepth } = context;
+  const key = `${row},${col}`;
+
+  if (bridges.has(key)) {
+    return BRIDGE_WOOD_RGB;
+  }
+
+  const cell = puzzle.cells[row * puzzle.cols + col]!;
+  const distance = terrainMaps.distanceFromLand[row]![col]!;
+  const depth = waterDepthAt(distance, maxDepth);
+
+  return tileBaseRgb(cell.kind, depth);
+}
+
+export function oceanWaterRgbForCell(
+  row: number,
+  col: number,
+  context: AppearanceContext,
+): { r: number; g: number; b: number } {
+  const { terrainMaps, maxDepth } = context;
+  const distance = terrainMaps.distanceFromLand[row]![col]!;
+  const depth = waterDepthAt(distance, maxDepth);
+
+  return tileBaseRgb("ocean", depth);
 }
 
 export function waterBaseForCell(
@@ -260,7 +318,7 @@ export function appearanceForCell(
     }
   }
 
-  let backgroundColor = "#000";
+  let backgroundColor = "transparent";
 
   if (hasBridge) {
     // DRAWN BY BridgeCanvasOverlay — KEEP CELL TRANSPARENT FOR OVERLAYS
