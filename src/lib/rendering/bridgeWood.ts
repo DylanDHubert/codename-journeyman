@@ -18,6 +18,12 @@ export type BridgeWoodField = {
     subRow?: number,
     subCol?: number,
   ) => { r: number; g: number; b: number };
+  sampleDeckFrac: (
+    row: number,
+    col: number,
+    fracRow: number,
+    fracCol: number,
+  ) => { r: number; g: number; b: number };
 };
 
 function normalizeNoise(value: number): number {
@@ -36,17 +42,6 @@ function mixRgb(
   };
 }
 
-function deckSamplePoint(
-  col: number,
-  row: number,
-  subCol: number,
-  subRow: number,
-): { x: number; y: number } {
-  const x = (col + (subCol + 0.5) / BRIDGE_SUBCELLS) * GRAIN_SCALE;
-  const y = (row + (subRow + 0.5) / BRIDGE_SUBCELLS) * GRAIN_SCALE * 0.55;
-  return { x, y };
-}
-
 function sampleDeckNoise(
   noise2D: (x: number, y: number) => number,
   x: number,
@@ -60,6 +55,25 @@ function sampleDeckNoise(
   return plankBand * 0.52 + grain * 0.33 + knot * 0.15;
 }
 
+function deckRgbFromNoise(
+  noise2D: (x: number, y: number) => number,
+  col: number,
+  row: number,
+  fracCol: number,
+  fracRow: number,
+): { r: number; g: number; b: number } {
+  const x = (col + fracCol) * GRAIN_SCALE;
+  const y = (row + fracRow) * GRAIN_SCALE * 0.55;
+  const noise = sampleDeckNoise(noise2D, x, y);
+  const delta = (noise - 0.5) * 2;
+
+  if (delta >= 0) {
+    return mixRgb(WOOD_BASE, WOOD_HIGHLIGHT, delta * 0.55);
+  }
+
+  return mixRgb(WOOD_BASE, WOOD_SHADOW, -delta * 0.65);
+}
+
 export function buildBridgeWoodField(puzzle: Puzzle): BridgeWoodField {
   const noise2D = createNoise2D(
     mulberry32(hashStringToSeed(`${puzzle.seed}-bridge-wood`)),
@@ -67,15 +81,12 @@ export function buildBridgeWoodField(puzzle: Puzzle): BridgeWoodField {
 
   return {
     sampleDeck(row, col, subRow = 0, subCol = 0) {
-      const { x, y } = deckSamplePoint(col, row, subCol, subRow);
-      const noise = sampleDeckNoise(noise2D, x, y);
-      const delta = (noise - 0.5) * 2;
-
-      if (delta >= 0) {
-        return mixRgb(WOOD_BASE, WOOD_HIGHLIGHT, delta * 0.55);
-      }
-
-      return mixRgb(WOOD_BASE, WOOD_SHADOW, -delta * 0.65);
+      const fracCol = (subCol + 0.5) / BRIDGE_SUBCELLS;
+      const fracRow = (subRow + 0.5) / BRIDGE_SUBCELLS;
+      return deckRgbFromNoise(noise2D, col, row, fracCol, fracRow);
+    },
+    sampleDeckFrac(row, col, fracRow, fracCol) {
+      return deckRgbFromNoise(noise2D, col, row, fracCol, fracRow);
     },
   };
 }
@@ -169,6 +180,155 @@ export function collectBridgePylonCorners(
   }
 
   return corners;
+}
+
+function drawBridgeWoodRect(
+  ctx: CanvasRenderingContext2D,
+  bridgeWood: BridgeWoodField,
+  row: number,
+  col: number,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  cellSize: number,
+  fracRowStart: number,
+  fracColStart: number,
+  fracRowSpan: number,
+  fracColSpan: number,
+): void {
+  const subSize = Math.max(1, Math.floor(cellSize / BRIDGE_SUBCELLS));
+
+  for (let py = 0; py < height; py += subSize) {
+    for (let px = 0; px < width; px += subSize) {
+      const fracRow = fracRowStart + ((py + subSize * 0.5) / cellSize) * fracRowSpan;
+      const fracCol = fracColStart + ((px + subSize * 0.5) / cellSize) * fracColSpan;
+      const { r, g, b } = bridgeWood.sampleDeckFrac(row, col, fracRow, fracCol);
+
+      ctx.fillStyle = `rgb(${r} ${g} ${b})`;
+      ctx.fillRect(
+        x + px,
+        y + py,
+        Math.min(subSize, width - px),
+        Math.min(subSize, height - py),
+      );
+    }
+  }
+}
+
+/** FILL GRID GAPS WITH DECK WOOD WHEN TWO BRIDGE CELLS SHARE AN EDGE */
+export function drawBridgeGapConnections(
+  ctx: CanvasRenderingContext2D,
+  puzzle: Puzzle,
+  bridges: Set<string>,
+  bridgeWood: BridgeWoodField,
+  cellSize: number,
+  gap: number,
+): void {
+  if (gap <= 0) {
+    return;
+  }
+
+  const stride = cellSize + gap;
+  const { rows, cols } = puzzle;
+
+  for (const key of bridges) {
+    const [rowText, colText] = key.split(",");
+    const row = Number(rowText);
+    const col = Number(colText);
+
+    if (row < 0 || col < 0 || row >= rows || col >= cols) {
+      continue;
+    }
+
+    const originX = col * stride;
+    const originY = row * stride;
+
+      if (hasBridge(bridges, row, col + 1)) {
+      drawBridgeWoodRect(
+        ctx,
+        bridgeWood,
+        row,
+        col,
+        originX + cellSize,
+        originY,
+        gap,
+        cellSize,
+        cellSize,
+        0,
+        1,
+        1,
+        1,
+      );
+    }
+
+    if (hasBridge(bridges, row + 1, col)) {
+      drawBridgeWoodRect(
+        ctx,
+        bridgeWood,
+        row,
+        col,
+        originX,
+        originY + cellSize,
+        cellSize,
+        gap,
+        cellSize,
+        1,
+        0,
+        1,
+        1,
+      );
+    }
+  }
+
+  for (let vRow = 1; vRow <= rows; vRow += 1) {
+    for (let vCol = 1; vCol <= cols; vCol += 1) {
+      const nw = hasBridge(bridges, vRow - 1, vCol - 1);
+      const ne = hasBridge(bridges, vRow - 1, vCol);
+      const sw = hasBridge(bridges, vRow, vCol - 1);
+      const se = hasBridge(bridges, vRow, vCol);
+
+      const westBridge = nw || sw;
+      const eastBridge = ne || se;
+      const northBridge = nw || ne;
+      const southBridge = sw || se;
+
+      if (!westBridge || !eastBridge || !northBridge || !southBridge) {
+        continue;
+      }
+
+      const anchorRow = nw
+        ? vRow - 1
+        : ne
+          ? vRow - 1
+          : sw
+            ? vRow
+            : vRow;
+      const anchorCol = nw
+        ? vCol - 1
+        : ne
+          ? vCol
+          : sw
+            ? vCol - 1
+            : vCol;
+
+      drawBridgeWoodRect(
+        ctx,
+        bridgeWood,
+        anchorRow,
+        anchorCol,
+        vCol * stride - gap,
+        vRow * stride - gap,
+        gap,
+        gap,
+        cellSize,
+        1,
+        1,
+        1,
+        1,
+      );
+    }
+  }
 }
 
 function fillPylonSquare(

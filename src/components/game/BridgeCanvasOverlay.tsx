@@ -6,6 +6,7 @@ import type { AppearanceContext } from "@/lib/rendering/cellAppearance";
 import {
   BRIDGE_SUBCELLS,
   collectBridgePylonCorners,
+  drawBridgeGapConnections,
   drawBridgePylon,
   drawMarshBridgeNails,
   type BridgeWoodField,
@@ -58,8 +59,30 @@ export function drawBridgeSurface(
         );
       }
     }
+  }
 
+  drawBridgeGapConnections(
+    ctx,
+    puzzle,
+    bridges,
+    bridgeWood,
+    cellSize,
+    gap,
+  );
+
+  for (const key of bridges) {
+    const [rowText, colText] = key.split(",");
+    const row = Number(rowText);
+    const col = Number(colText);
+
+    if (row < 0 || col < 0 || row >= rows || col >= cols) {
+      continue;
+    }
+
+    const originX = col * stride;
+    const originY = row * stride;
     const cellIndex = row * cols + col;
+
     if (puzzle.cells[cellIndex]!.kind === "marsh") {
       drawMarshBridgeNails(ctx, puzzle, row, col, originX, originY, cellSize);
     }
