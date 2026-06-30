@@ -2,6 +2,8 @@
 
 Design notes for future mechanics, content themes, and a possible sequel. Grouped by theme.
 
+**First implementation slice (levels, PC sizing, animals):** see [`ideas.md`](./ideas.md).
+
 ---
 
 ## Naval & Maritime
