@@ -1,0 +1,35 @@
+{
+  "version": 1,
+  "islands": [
+    {
+      "id": "island-2026-06-30-1yikse4",
+      "name": "Island 2026-06-30",
+      "savedAt": "2026-06-30T19:13:43.750Z",
+      "fingerprint": "1yikse4",
+      "sourceSeed": "2026-06-30",
+      "parCost": 20,
+      "rows": 56,
+      "cols": 56
+    },
+    {
+      "id": "island-2026-06-30-0q46of1",
+      "name": "Island 2026-06-30",
+      "savedAt": "2026-06-30T17:57:56.854Z",
+      "fingerprint": "0q46of1",
+      "sourceSeed": "random-57154",
+      "parCost": 10,
+      "rows": 22,
+      "cols": 14
+    },
+    {
+      "id": "island-2026-06-30-037r8k8",
+      "name": "Island 2026-06-30",
+      "savedAt": "2026-06-30T17:57:12.371Z",
+      "fingerprint": "037r8k8",
+      "sourceSeed": "2026-06-30",
+      "parCost": 8,
+      "rows": 22,
+      "cols": 14
+    }
+  ]
+}

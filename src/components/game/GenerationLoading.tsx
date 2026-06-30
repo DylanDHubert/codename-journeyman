@@ -8,6 +8,7 @@ type GenerationLoadingProps = {
   error?: string | null;
   fullScreen?: boolean;
   startedAt?: number | null;
+  isLargeMap?: boolean;
 };
 
 function formatElapsed(ms: number): string {
@@ -24,6 +25,7 @@ export function GenerationLoading({
   error,
   fullScreen = false,
   startedAt = null,
+  isLargeMap = false,
 }: GenerationLoadingProps) {
   const [stepIndex, setStepIndex] = useState(0);
   const [elapsedMs, setElapsedMs] = useState(0);
@@ -74,8 +76,13 @@ export function GenerationLoading({
           </p>
           {!error && startedAt !== null ? (
             <p className="mt-1 font-mono text-xs text-sky-100/45">
-              waiting {formatElapsed(elapsedMs)} — check server terminal for{" "}
-              <code className="text-sky-100/60">[bridge-isles:gen]</code>
+              waiting {formatElapsed(elapsedMs)}
+              {isLargeMap
+                ? " — large maps can take several minutes; still sculpting small islands"
+                : " — check server terminal for "}
+              {!isLargeMap ? (
+                <code className="text-sky-100/60">[bridge-isles:gen]</code>
+              ) : null}
             </p>
           ) : null}
         </div>

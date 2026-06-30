@@ -1,0 +1,1568 @@
+{
+  "version": 1,
+  "id": "island-2026-06-30-0q46of1",
+  "name": "Island 2026-06-30",
+  "savedAt": "2026-06-30T17:57:56.854Z",
+  "fingerprint": "0q46of1",
+  "sourceSeed": "random-57154",
+  "parCost": 10,
+  "puzzle": {
+    "seed": "random-57154-1",
+    "rows": 22,
+    "cols": 14,
+    "cells": [
+      {
+        "kind": "ocean",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "marsh",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "ocean",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "ocean",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "ocean",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "ocean",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "ocean",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "ocean",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "marsh",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "ocean",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "ocean",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "ocean",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "ocean",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "beach",
+        "role": "none",
+        "componentId": 0
+      },
+      {
+        "kind": "beach",
+        "role": "start",
+        "componentId": 1
+      },
+      {
+        "kind": "beach",
+        "role": "none",
+        "componentId": 1
+      },
+      {
+        "kind": "ocean",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "ocean",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "cliff",
+        "role": "none",
+        "componentId": 2
+      },
+      {
+        "kind": "ocean",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "marsh",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "beach",
+        "role": "none",
+        "componentId": 3
+      },
+      {
+        "kind": "beach",
+        "role": "none",
+        "componentId": 3
+      },
+      {
+        "kind": "cliff",
+        "role": "none",
+        "componentId": 3
+      },
+      {
+        "kind": "ocean",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "ocean",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "marsh",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "beach",
+        "role": "none",
+        "componentId": 0
+      },
+      {
+        "kind": "cliff",
+        "role": "none",
+        "componentId": 1
+      },
+      {
+        "kind": "beach",
+        "role": "none",
+        "componentId": 1
+      },
+      {
+        "kind": "ocean",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "ocean",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "beach",
+        "role": "none",
+        "componentId": 2
+      },
+      {
+        "kind": "marsh",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "beach",
+        "role": "none",
+        "componentId": 3
+      },
+      {
+        "kind": "grass",
+        "role": "none",
+        "componentId": 3
+      },
+      {
+        "kind": "beach",
+        "role": "none",
+        "componentId": 3
+      },
+      {
+        "kind": "marsh",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "ocean",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "ocean",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "ocean",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "marsh",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "ocean",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "ocean",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "beach",
+        "role": "none",
+        "componentId": 4
+      },
+      {
+        "kind": "marsh",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "beach",
+        "role": "none",
+        "componentId": 2
+      },
+      {
+        "kind": "marsh",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "ocean",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "cliff",
+        "role": "none",
+        "componentId": 3
+      },
+      {
+        "kind": "marsh",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "ocean",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "whirlpool",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "ocean",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "ocean",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "ocean",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "ocean",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "ocean",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "ocean",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "ocean",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "ocean",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "ocean",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "ocean",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "ocean",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "ocean",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "whirlpool",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "whirlpool",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "ocean",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "ocean",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "ocean",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "beach",
+        "role": "none",
+        "componentId": 5
+      },
+      {
+        "kind": "ocean",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "ocean",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "ocean",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "ocean",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "marsh",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "beach",
+        "role": "none",
+        "componentId": 6
+      },
+      {
+        "kind": "beach",
+        "role": "none",
+        "componentId": 6
+      },
+      {
+        "kind": "marsh",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "ocean",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "whirlpool",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "ocean",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "ocean",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "marsh",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "grass",
+        "role": "none",
+        "componentId": 5
+      },
+      {
+        "kind": "beach",
+        "role": "none",
+        "componentId": 5
+      },
+      {
+        "kind": "beach",
+        "role": "none",
+        "componentId": 5
+      },
+      {
+        "kind": "ocean",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "ocean",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "beach",
+        "role": "none",
+        "componentId": 6
+      },
+      {
+        "kind": "beach",
+        "role": "none",
+        "componentId": 6
+      },
+      {
+        "kind": "ocean",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "ocean",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "ocean",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "ocean",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "ocean",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "marsh",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "beach",
+        "role": "none",
+        "componentId": 7
+      },
+      {
+        "kind": "grass",
+        "role": "none",
+        "componentId": 5
+      },
+      {
+        "kind": "beach",
+        "role": "none",
+        "componentId": 5
+      },
+      {
+        "kind": "beach",
+        "role": "none",
+        "componentId": 5
+      },
+      {
+        "kind": "ocean",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "ocean",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "beach",
+        "role": "none",
+        "componentId": 6
+      },
+      {
+        "kind": "ocean",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "ocean",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "ocean",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "ocean",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "ocean",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "ocean",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "ocean",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "beach",
+        "role": "none",
+        "componentId": 7
+      },
+      {
+        "kind": "cliff",
+        "role": "none",
+        "componentId": 5
+      },
+      {
+        "kind": "marsh",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "ocean",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "ocean",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "ocean",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "ocean",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "ocean",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "ocean",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "ocean",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "ocean",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "ocean",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "ocean",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "ocean",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "beach",
+        "role": "none",
+        "componentId": 7
+      },
+      {
+        "kind": "ocean",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "ocean",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "ocean",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "ocean",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "ocean",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "ocean",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "ocean",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "ocean",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "ocean",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "ocean",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "whirlpool",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "whirlpool",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "ocean",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "beach",
+        "role": "none",
+        "componentId": 7
+      },
+      {
+        "kind": "marsh",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "ocean",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "ocean",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "ocean",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "beach",
+        "role": "none",
+        "componentId": 8
+      },
+      {
+        "kind": "beach",
+        "role": "none",
+        "componentId": 8
+      },
+      {
+        "kind": "marsh",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "ocean",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "ocean",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "ocean",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "ocean",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "ocean",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "marsh",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "cliff",
+        "role": "none",
+        "componentId": 7
+      },
+      {
+        "kind": "beach",
+        "role": "none",
+        "componentId": 9
+      },
+      {
+        "kind": "marsh",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "beach",
+        "role": "none",
+        "componentId": 8
+      },
+      {
+        "kind": "cliff",
+        "role": "none",
+        "componentId": 8
+      },
+      {
+        "kind": "cliff",
+        "role": "none",
+        "componentId": 8
+      },
+      {
+        "kind": "marsh",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "ocean",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "ocean",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "ocean",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "marsh",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "beach",
+        "role": "none",
+        "componentId": 7
+      },
+      {
+        "kind": "beach",
+        "role": "none",
+        "componentId": 7
+      },
+      {
+        "kind": "beach",
+        "role": "none",
+        "componentId": 7
+      },
+      {
+        "kind": "grass",
+        "role": "none",
+        "componentId": 7
+      },
+      {
+        "kind": "marsh",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "ocean",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "beach",
+        "role": "none",
+        "componentId": 8
+      },
+      {
+        "kind": "grass",
+        "role": "none",
+        "componentId": 8
+      },
+      {
+        "kind": "cliff",
+        "role": "none",
+        "componentId": 8
+      },
+      {
+        "kind": "ocean",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "ocean",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "ocean",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "ocean",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "marsh",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "beach",
+        "role": "none",
+        "componentId": 7
+      },
+      {
+        "kind": "grass",
+        "role": "none",
+        "componentId": 7
+      },
+      {
+        "kind": "grass",
+        "role": "none",
+        "componentId": 7
+      },
+      {
+        "kind": "grass",
+        "role": "waypoint",
+        "componentId": 7
+      },
+      {
+        "kind": "ocean",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "marsh",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "beach",
+        "role": "none",
+        "componentId": 8
+      },
+      {
+        "kind": "grass",
+        "role": "none",
+        "componentId": 8
+      },
+      {
+        "kind": "beach",
+        "role": "none",
+        "componentId": 8
+      },
+      {
+        "kind": "marsh",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "ocean",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "ocean",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "ocean",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "marsh",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "beach",
+        "role": "none",
+        "componentId": 7
+      },
+      {
+        "kind": "grass",
+        "role": "none",
+        "componentId": 7
+      },
+      {
+        "kind": "grass",
+        "role": "none",
+        "componentId": 7
+      },
+      {
+        "kind": "beach",
+        "role": "none",
+        "componentId": 7
+      },
+      {
+        "kind": "ocean",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "ocean",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "cliff",
+        "role": "none",
+        "componentId": 8
+      },
+      {
+        "kind": "beach",
+        "role": "none",
+        "componentId": 8
+      },
+      {
+        "kind": "grass",
+        "role": "none",
+        "componentId": 8
+      },
+      {
+        "kind": "beach",
+        "role": "none",
+        "componentId": 8
+      },
+      {
+        "kind": "ocean",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "ocean",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "ocean",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "beach",
+        "role": "none",
+        "componentId": 7
+      },
+      {
+        "kind": "grass",
+        "role": "none",
+        "componentId": 7
+      },
+      {
+        "kind": "grass",
+        "role": "none",
+        "componentId": 7
+      },
+      {
+        "kind": "beach",
+        "role": "none",
+        "componentId": 7
+      },
+      {
+        "kind": "marsh",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "ocean",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "ocean",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "ocean",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "ocean",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "beach",
+        "role": "none",
+        "componentId": 8
+      },
+      {
+        "kind": "grass",
+        "role": "none",
+        "componentId": 8
+      },
+      {
+        "kind": "beach",
+        "role": "none",
+        "componentId": 8
+      },
+      {
+        "kind": "ocean",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "marsh",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "beach",
+        "role": "none",
+        "componentId": 7
+      },
+      {
+        "kind": "grass",
+        "role": "none",
+        "componentId": 7
+      },
+      {
+        "kind": "beach",
+        "role": "none",
+        "componentId": 7
+      },
+      {
+        "kind": "ocean",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "ocean",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "ocean",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "ocean",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "ocean",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "ocean",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "ocean",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "cliff",
+        "role": "none",
+        "componentId": 8
+      },
+      {
+        "kind": "beach",
+        "role": "none",
+        "componentId": 8
+      },
+      {
+        "kind": "ocean",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "marsh",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "beach",
+        "role": "none",
+        "componentId": 7
+      },
+      {
+        "kind": "grass",
+        "role": "none",
+        "componentId": 7
+      },
+      {
+        "kind": "cliff",
+        "role": "none",
+        "componentId": 7
+      },
+      {
+        "kind": "marsh",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "ocean",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "ocean",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "ocean",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "ocean",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "ocean",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "ocean",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "ocean",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "ocean",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "ocean",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "ocean",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "ocean",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "beach",
+        "role": "none",
+        "componentId": 7
+      },
+      {
+        "kind": "grass",
+        "role": "none",
+        "componentId": 7
+      },
+      {
+        "kind": "beach",
+        "role": "none",
+        "componentId": 7
+      },
+      {
+        "kind": "marsh",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "ocean",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "ocean",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "ocean",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "ocean",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "ocean",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "marsh",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "beach",
+        "role": "none",
+        "componentId": 10
+      },
+      {
+        "kind": "cliff",
+        "role": "none",
+        "componentId": 10
+      },
+      {
+        "kind": "beach",
+        "role": "none",
+        "componentId": 10
+      },
+      {
+        "kind": "marsh",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "marsh",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "cliff",
+        "role": "none",
+        "componentId": 7
+      },
+      {
+        "kind": "cliff",
+        "role": "none",
+        "componentId": 7
+      },
+      {
+        "kind": "ocean",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "ocean",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "ocean",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "ocean",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "ocean",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "ocean",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "marsh",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "beach",
+        "role": "none",
+        "componentId": 10
+      },
+      {
+        "kind": "beach",
+        "role": "none",
+        "componentId": 10
+      },
+      {
+        "kind": "ocean",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "ocean",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "ocean",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "ocean",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "ocean",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "ocean",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "ocean",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "ocean",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "ocean",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "ocean",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "ocean",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "marsh",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "beach",
+        "role": "none",
+        "componentId": 10
+      },
+      {
+        "kind": "cliff",
+        "role": "none",
+        "componentId": 10
+      },
+      {
+        "kind": "ocean",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "ocean",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "ocean",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "ocean",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "ocean",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "ocean",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "ocean",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "ocean",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "ocean",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "cliff",
+        "role": "none",
+        "componentId": 10
+      },
+      {
+        "kind": "cliff",
+        "role": "none",
+        "componentId": 10
+      },
+      {
+        "kind": "beach",
+        "role": "goal",
+        "componentId": 10
+      },
+      {
+        "kind": "beach",
+        "role": "none",
+        "componentId": 10
+      },
+      {
+        "kind": "ocean",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "ocean",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "ocean",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "ocean",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "ocean",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "ocean",
+        "role": "none",
+        "componentId": -1
+      },
+      {
+        "kind": "ocean",
+        "role": "none",
+        "componentId": -1
+      }
+    ],
+    "start": {
+      "row": 1,
+      "col": 0
+    },
+    "waypoint": {
+      "row": 12,
+      "col": 13
+    },
+    "goal": {
+      "row": 21,
+      "col": 5
+    }
+  }
+}

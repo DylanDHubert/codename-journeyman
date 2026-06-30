@@ -3,6 +3,7 @@ import { createNoise2D } from "simplex-noise";
 import { endpointSpread, pickCourierEndpoints } from "./endpoints";
 import {
   DEFAULT_GENERATION_CONFIG,
+  isLargeMapConfig,
   type GenerationConfig,
   normalizeConfig,
 } from "./generationConfig";
@@ -17,6 +18,8 @@ import {
   buildParContext,
   parCostImpossibleAbove,
 } from "./parPrecompute";
+import { rotatePuzzleClockwise } from "./puzzleRotate";
+import { scalePuzzle2x } from "./puzzleScale";
 import { hashStringToSeed, mulberry32 } from "./seed";
 import {
   buildTileGridFromNoise,
@@ -32,6 +35,121 @@ type GenerationOptions = {
 };
 
 const MIN_ENDPOINT_DISTANCE_RATIO = 0.35;
+const MIN_LARGE_MAP_ISLANDS = 14;
+const MAX_LARGE_TOP_THREE_LAND_SHARE = 0.48;
+const MAX_LARGE_LARGEST_ISLAND_SHARE = 0.18;
+
+type IslandDistribution = {
+  islandCount: number;
+  topThreeLandShare: number;
+  largestIslandShare: number;
+};
+
+function islandDistribution(
+  labels: number[][],
+  rows: number,
+  cols: number,
+): IslandDistribution {
+  const sizes = new Map<number, number>();
+
+  for (let row = 0; row < rows; row += 1) {
+    for (let col = 0; col < cols; col += 1) {
+      const id = labels[row]![col]!;
+      if (id >= 0) {
+        sizes.set(id, (sizes.get(id) ?? 0) + 1);
+      }
+    }
+  }
+
+  const sorted = [...sizes.values()].sort((a, b) => b - a);
+  const totalLand = sorted.reduce((sum, size) => sum + size, 0);
+  const topThree = sorted.slice(0, 3).reduce((sum, size) => sum + size, 0);
+
+  return {
+    islandCount: sorted.length,
+    topThreeLandShare: totalLand > 0 ? topThree / totalLand : 1,
+    largestIslandShare: totalLand > 0 ? (sorted[0] ?? 0) / totalLand : 1,
+  };
+}
+
+function isAcceptableLargeTerrain(
+  labels: number[][],
+  rows: number,
+  cols: number,
+  relaxed = false,
+): string {
+  const stats = islandDistribution(labels, rows, cols);
+
+  if (stats.islandCount < (relaxed ? 10 : MIN_LARGE_MAP_ISLANDS)) {
+    return "too few islands";
+  }
+
+  if (!relaxed) {
+    if (stats.topThreeLandShare > MAX_LARGE_TOP_THREE_LAND_SHARE) {
+      return "islands too concentrated";
+    }
+
+    if (stats.largestIslandShare > MAX_LARGE_LARGEST_ISLAND_SHARE) {
+      return "dominant island mass";
+    }
+  }
+
+  return "";
+}
+
+function largeNoiseForAttempt(
+  config: GenerationConfig,
+  attempt: number,
+): GenerationConfig {
+  const variants = [
+    config.noise,
+    {
+      ...config.noise,
+      landThreshold: 0.38,
+      octave1Scale: 0.25,
+      octave3Scale: 0.5,
+      octave3Weight: 0.55,
+    },
+    {
+      ...config.noise,
+      landThreshold: 0.42,
+      octave1Scale: 0.21,
+      octave2Scale: 0.19,
+      octave3Scale: 0.44,
+    },
+    {
+      ...DEFAULT_GENERATION_CONFIG.noise,
+      landThreshold: 0.37,
+      octave1Scale: 0.2,
+      octave3Scale: 0.4,
+      octave3Weight: 0.5,
+    },
+  ];
+
+  return {
+    ...config,
+    noise: variants[attempt % variants.length]!,
+  };
+}
+
+function parSearchLimits(config: GenerationConfig): {
+  maxStatesPerLayer: number;
+  maxCandidatesPerState: number;
+} {
+  if (isLargeMapConfig(config)) {
+    return { maxStatesPerLayer: 96, maxCandidatesPerState: 24 };
+  }
+
+  return { maxStatesPerLayer: 48, maxCandidatesPerState: 16 };
+}
+
+function finalizePuzzle(puzzle: Puzzle, config: GenerationConfig): Puzzle {
+  if (!isLargeMapConfig(config)) {
+    return puzzle;
+  }
+
+  return rotatePuzzleClockwise(scalePuzzle2x(puzzle));
+}
 
 function layeredNoise(
   noise2D: (x: number, y: number) => number,
@@ -115,18 +233,32 @@ export function generatePuzzleWithDebug(options: GenerationOptions = {}): {
     const terrainMs = nowMs() - terrainStarted;
     totalTerrainMs += terrainMs;
 
+    const attemptStats: GenerationAttemptStats = {
+      attempt,
+      terrainMs,
+      endpointsMs: 0,
+      parFastMs: 0,
+      rejected: "",
+    };
+
+    if (isLargeMapConfig(config)) {
+      const terrainIssue = isAcceptableLargeTerrain(labels, rows, cols);
+      if (terrainIssue) {
+        attemptStats.rejected = terrainIssue;
+        attemptLog.push(attemptStats);
+        logGeneration(`attempt ${attempt} rejected`, {
+          reason: attemptStats.rejected,
+          ...islandDistribution(labels, rows, cols),
+        });
+        continue;
+      }
+    }
+
     const endpointsStarted = nowMs();
     const route = pickCourierEndpoints(tileGrid, labels, rows, cols, rng);
     const endpointsMs = nowMs() - endpointsStarted;
     totalEndpointsMs += endpointsMs;
-
-    const attemptStats: GenerationAttemptStats = {
-      attempt,
-      terrainMs,
-      endpointsMs,
-      parFastMs: 0,
-      rejected: "",
-    };
+    attemptStats.endpointsMs = endpointsMs;
 
     if (!route) {
       attemptStats.rejected = "no courier endpoints";
@@ -182,12 +314,13 @@ export function generatePuzzleWithDebug(options: GenerationOptions = {}): {
     });
 
     const parStarted = nowMs();
+    const parLimits = parSearchLimits(config);
     const parCost = computeMinimumCost(
       puzzleWithoutPar,
       config.maxPar + 1,
       {
-        maxStatesPerLayer: 48,
-        maxCandidatesPerState: 16,
+        maxStatesPerLayer: parLimits.maxStatesPerLayer,
+        maxCandidatesPerState: parLimits.maxCandidatesPerState,
         context: parContext,
       },
     );
@@ -218,7 +351,7 @@ export function generatePuzzleWithDebug(options: GenerationOptions = {}): {
 
     attemptLog.push(attemptStats);
 
-    const puzzle = { ...puzzleWithoutPar, parCost };
+    const puzzle = finalizePuzzle({ ...puzzleWithoutPar, parCost }, config);
     const debug: GenerationDebugReport = {
       seed: baseSeed,
       totalMs: nowMs() - startedAt,
@@ -241,7 +374,9 @@ export function generatePuzzleWithDebug(options: GenerationOptions = {}): {
   logGeneration("fallback", { afterAttempts: config.maxAttempts });
 
   const fallbackStarted = nowMs();
-  const puzzle = buildFallbackPuzzle(baseSeed, config);
+  const puzzle = isLargeMapConfig(config)
+    ? buildNoiseFallbackPuzzle(baseSeed, config)
+    : finalizePuzzle(buildFallbackPuzzle(baseSeed, config), config);
   const debug: GenerationDebugReport = {
     seed: baseSeed,
     totalMs: nowMs() - fallbackStarted,
@@ -259,6 +394,86 @@ export function generatePuzzleWithDebug(options: GenerationOptions = {}): {
   };
 
   return { puzzle, debug };
+}
+
+function buildNoiseFallbackPuzzle(seed: string, config: GenerationConfig): Puzzle {
+  return generateLargeMapFallback(seed, config);
+}
+
+function generateLargeMapFallback(
+  seed: string,
+  config: GenerationConfig,
+): Puzzle {
+  const { rows, cols } = config.grid;
+  const parLimits = parSearchLimits(config);
+  let wave = 0;
+
+  while (true) {
+    const waveSeed = `${seed}-large-fallback-w${wave}`;
+    const startAttempt = wave * 1024;
+
+    for (let attempt = 0; attempt < 1024; attempt += 1) {
+      const globalAttempt = startAttempt + attempt;
+      const attemptSeed = `${waveSeed}-${attempt}`;
+      const rng = mulberry32(hashStringToSeed(attemptSeed));
+      const relaxed = attempt >= 768;
+      const attemptConfig = largeNoiseForAttempt(config, globalAttempt);
+      const rawGrid = buildRawTerrainGrid(attemptConfig, attemptSeed);
+      const tileGrid = buildTileGridFromNoise(rawGrid, attemptSeed, rng);
+      const labels = labelLandComponents(tileGrid, rows, cols);
+
+      const terrainIssue = isAcceptableLargeTerrain(labels, rows, cols, relaxed);
+      if (terrainIssue) {
+        continue;
+      }
+
+      const route = pickCourierEndpoints(tileGrid, labels, rows, cols, rng);
+      if (!route) {
+        continue;
+      }
+
+      const cells = toPuzzleCells(
+        tileGrid,
+        labels,
+        rows,
+        cols,
+        route.start,
+        route.waypoint,
+        route.goal,
+      );
+      const puzzleWithoutPar: PuzzleGrid = {
+        seed: attemptSeed,
+        rows,
+        cols,
+        cells,
+        ...route,
+      };
+      const parContext = buildParContext(puzzleWithoutPar);
+      const parCost = computeMinimumCost(
+        puzzleWithoutPar,
+        relaxed ? config.maxPar + 8 : config.maxPar + 1,
+        {
+          context: parContext,
+          ...parLimits,
+        },
+      );
+
+      if (parCost === null || parCost < config.minPar) {
+        continue;
+      }
+
+      if (!relaxed && parCost > config.maxPar) {
+        continue;
+      }
+
+      return finalizePuzzle(
+        { ...puzzleWithoutPar, parCost: Math.max(parCost, config.minPar) },
+        config,
+      );
+    }
+
+    wave += 1;
+  }
 }
 
 function buildFallbackPuzzle(seed: string, config: GenerationConfig): Puzzle {
@@ -313,13 +528,14 @@ function buildFallbackPuzzle(seed: string, config: GenerationConfig): Puzzle {
 
   const parContext = buildParContext(puzzleWithoutPar);
 
+  const parLimits = parSearchLimits(config);
+
   return {
     ...puzzleWithoutPar,
     parCost:
       computeMinimumCost(puzzleWithoutPar, config.maxPar + 1, {
         context: parContext,
-        maxStatesPerLayer: 48,
-        maxCandidatesPerState: 16,
+        ...parLimits,
       }) ?? 5,
   };
 }

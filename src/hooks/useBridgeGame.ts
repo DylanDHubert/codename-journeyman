@@ -9,13 +9,20 @@ import {
   configEquals,
   configKey,
   DEFAULT_GENERATION_CONFIG,
+  isLargeMapConfig,
+  LARGE_GENERATION_CONFIG,
   loadGenerationConfig,
   normalizeConfig,
   saveGenerationConfig,
   type GenerationConfig,
 } from "@/lib/game/generationConfig";
 import { dailySeed } from "@/lib/game/seed";
+import {
+  cellsOnLineSegment,
+  type StrokeMode,
+} from "@/lib/game/bridgeStroke";
 import { canPlaceBridge, computeMinimumSolution, courierPath, simulate } from "@/lib/game/simulation";
+import type { CellCoord } from "@/lib/game/types";
 import { buildParContext } from "@/lib/game/parPrecompute";
 import { pathKeySet } from "@/lib/game/terrain";
 import type { GamePhase, GameState, Puzzle } from "@/lib/game/types";
@@ -78,25 +85,31 @@ export function useBridgeGame(options: UseBridgeGameOptions = {}) {
   );
   const [hasSubmitted, setHasSubmitted] = useState(false);
   const [showOptimalPath, setShowOptimalPath] = useState(false);
+  const strokeRef = useRef<{
+    mode: StrokeMode;
+    visited: Set<string>;
+  } | null>(null);
 
   const loadPuzzle = useCallback(
     async (nextSeed: string, nextConfig: GenerationConfig) => {
       const requestId = requestIdRef.current + 1;
       requestIdRef.current = requestId;
+      const resolved = normalizeConfig(nextConfig);
 
       if (process.env.NODE_ENV === "development") {
         console.log(
           "[bridge-isles:client] loadPuzzle start",
-          { requestId, seed: nextSeed, grid: nextConfig.grid },
+          { requestId, seed: nextSeed, grid: resolved.grid, mapSize: resolved.mapSize },
         );
       }
 
+      setConfig(resolved);
       setIsGenerating(true);
       setGenStartedAt(performance.now());
       setGenError(null);
 
       try {
-        const result = await generatePuzzleAction(nextSeed, nextConfig);
+        const result = await generatePuzzleAction(nextSeed, resolved);
 
         if (requestIdRef.current !== requestId) {
           if (process.env.NODE_ENV === "development") {
@@ -110,7 +123,6 @@ export function useBridgeGame(options: UseBridgeGameOptions = {}) {
 
         seedRef.current = nextSeed;
         setSeed(nextSeed);
-        setConfig(nextConfig);
         setState(emptyGameState(result.puzzle));
         setLastDebug(result.debug);
         setHasSubmitted(false);
@@ -138,6 +150,11 @@ export function useBridgeGame(options: UseBridgeGameOptions = {}) {
           requestId,
           message,
         });
+
+        if (isLargeMapConfig(resolved)) {
+          void loadPuzzle(`${nextSeed}-retry-${requestId}`, resolved);
+          return;
+        }
 
         setGenError(message);
       } finally {
@@ -167,19 +184,68 @@ export function useBridgeGame(options: UseBridgeGameOptions = {}) {
     void loadPuzzle(bootSeed, configToUse);
   }, [options.initialPuzzle, bootSeed, bootConfig, loadPuzzle]);
 
-  const toggleBridge = useCallback((row: number, col: number) => {
+  const applyStrokeCells = useCallback(
+    (
+      puzzle: GameState["puzzle"],
+      bridges: Set<string>,
+      cells: CellCoord[],
+      mode: StrokeMode,
+      visited: Set<string>,
+    ): Set<string> | null => {
+      let changed = false;
+      const next = new Set(bridges);
+
+      for (const { row, col } of cells) {
+        if (!canPlaceBridge(puzzle, row, col)) {
+          continue;
+        }
+
+        const key = cellKey(row, col);
+        if (visited.has(key)) {
+          continue;
+        }
+
+        visited.add(key);
+
+        if (mode === "add") {
+          if (!next.has(key)) {
+            next.add(key);
+            changed = true;
+          }
+        } else if (next.has(key)) {
+          next.delete(key);
+          changed = true;
+        }
+      }
+
+      return changed ? next : null;
+    },
+    [],
+  );
+
+  const beginBridgeStroke = useCallback((row: number, col: number) => {
     setState((current) => {
       if (!canPlaceBridge(current.puzzle, row, col)) {
+        strokeRef.current = null;
         return current;
       }
 
       const key = cellKey(row, col);
-      const bridges = new Set(current.bridges);
+      const mode: StrokeMode = current.bridges.has(key) ? "remove" : "add";
+      const visited = new Set<string>();
+      strokeRef.current = { mode, visited };
 
-      if (bridges.has(key)) {
-        bridges.delete(key);
-      } else {
-        bridges.add(key);
+      const bridges =
+        applyStrokeCells(
+          current.puzzle,
+          current.bridges,
+          [{ row, col }],
+          mode,
+          visited,
+        ) ?? current.bridges;
+
+      if (bridges === current.bridges) {
+        return current;
       }
 
       return {
@@ -189,6 +255,43 @@ export function useBridgeGame(options: UseBridgeGameOptions = {}) {
         result: null,
       };
     });
+  }, [applyStrokeCells]);
+
+  const continueBridgeStroke = useCallback(
+    (from: CellCoord, to: CellCoord) => {
+      const stroke = strokeRef.current;
+      if (!stroke) {
+        return;
+      }
+
+      const segment = cellsOnLineSegment(from, to);
+
+      setState((current) => {
+        const bridges = applyStrokeCells(
+          current.puzzle,
+          current.bridges,
+          segment,
+          stroke.mode,
+          stroke.visited,
+        );
+
+        if (!bridges) {
+          return current;
+        }
+
+        return {
+          ...current,
+          bridges,
+          phase: "editing",
+          result: null,
+        };
+      });
+    },
+    [applyStrokeCells],
+  );
+
+  const endBridgeStroke = useCallback(() => {
+    strokeRef.current = null;
   }, []);
 
   const runSimulation = useCallback(() => {
@@ -233,6 +336,25 @@ export function useBridgeGame(options: UseBridgeGameOptions = {}) {
     [config, loadPuzzle],
   );
 
+  const loadSavedPuzzle = useCallback((puzzle: Puzzle) => {
+    requestIdRef.current += 1;
+    seedRef.current = puzzle.seed;
+    setSeed(puzzle.seed);
+    setConfig((current) =>
+      normalizeConfig({
+        ...current,
+        grid: { rows: puzzle.rows, cols: puzzle.cols },
+      }),
+    );
+    setState(emptyGameState(puzzle));
+    setIsGenerating(false);
+    setGenStartedAt(null);
+    setGenError(null);
+    setLastDebug(null);
+    setHasSubmitted(false);
+    setShowOptimalPath(false);
+  }, []);
+
   const applyConfig = useCallback(
     (nextConfig: GenerationConfig, persist = true) => {
       const resolved = normalizeConfig(nextConfig);
@@ -256,6 +378,14 @@ export function useBridgeGame(options: UseBridgeGameOptions = {}) {
   const resetConfigToDefaults = useCallback(() => {
     applyConfig(DEFAULT_GENERATION_CONFIG);
   }, [applyConfig]);
+
+  const loadLargeMap = useCallback(() => {
+    void loadPuzzle(seedRef.current, LARGE_GENERATION_CONFIG);
+  }, [loadPuzzle]);
+
+  const loadStandardMap = useCallback(() => {
+    void loadPuzzle(seedRef.current, DEFAULT_GENERATION_CONFIG);
+  }, [loadPuzzle]);
 
   const pathKeys = useMemo(() => {
     if (!state.result?.path.length) {
@@ -299,14 +429,20 @@ export function useBridgeGame(options: UseBridgeGameOptions = {}) {
     genStartedAt,
     genError,
     lastDebug,
-    toggleBridge,
+    beginBridgeStroke,
+    continueBridgeStroke,
+    endBridgeStroke,
     runSimulation,
     toggleOptimalPath,
     resetBridges,
     toggleComponents,
     newPuzzle,
+    loadSavedPuzzle,
     applyConfig,
     resetConfigToDefaults,
+    loadLargeMap,
+    loadStandardMap,
+    isLargeMap: isLargeMapConfig(config),
   };
 }
 

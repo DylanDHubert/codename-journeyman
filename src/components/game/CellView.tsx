@@ -1,6 +1,5 @@
 import type { CSSProperties } from "react";
 
-import { canPlaceBridge } from "@/lib/game/simulation";
 import {
   appearanceForCell,
   isMarkerOverlay,
@@ -15,7 +14,6 @@ type CellViewProps = {
   context: AppearanceContext;
   cellSize: number;
   interactive: boolean;
-  onToggle?: (row: number, col: number) => void;
 };
 
 export function CellView({
@@ -24,12 +22,10 @@ export function CellView({
   context,
   cellSize,
   interactive,
-  onToggle,
 }: CellViewProps) {
   const appearance = appearanceForCell(row, col, context);
   const accent = overlayAccent(appearance.overlay);
   const label = overlayLabel(appearance.overlay);
-  const bridgeable = canPlaceBridge(context.puzzle, row, col);
 
   const style: CSSProperties = {
     width: cellSize,
@@ -39,16 +35,12 @@ export function CellView({
   };
 
   return (
-    <button
-      type="button"
+    <div
+      role="gridcell"
       aria-label={`Cell ${row + 1}, ${col + 1}`}
-      disabled={!interactive || !bridgeable}
-      onClick={() => onToggle?.(row, col)}
       className={[
-        "relative transition-transform duration-100",
-        interactive && bridgeable
-          ? "cursor-pointer hover:brightness-110 active:scale-95"
-          : "cursor-default",
+        "relative",
+        interactive ? "pointer-events-none" : "",
         appearance.overlay === "path" ? "brightness-110" : "",
         context.puzzle.cells[row * context.puzzle.cols + col]?.kind === "whirlpool"
           ? "overflow-hidden"
@@ -81,6 +73,6 @@ export function CellView({
           ×2
         </span>
       ) : null}
-    </button>
+    </div>
   );
 }

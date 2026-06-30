@@ -20,6 +20,13 @@ type GameHudProps = {
   onToggleComponents: () => void;
   onToggleOptimalPath?: () => void;
   onNewPuzzle: () => void;
+  onLoadLargeMap?: () => void;
+  onLoadStandardMap?: () => void;
+  isLargeMap?: boolean;
+  onSaveIsland?: () => void;
+  onOpenSavedIslands?: () => void;
+  isSavingIsland?: boolean;
+  saveIslandMessage?: string | null;
 };
 
 function StarRow({ count }: { count: number }) {
@@ -48,6 +55,13 @@ export function GameHud({
   onToggleComponents,
   onToggleOptimalPath,
   onNewPuzzle,
+  onLoadLargeMap,
+  onLoadStandardMap,
+  isLargeMap = false,
+  onSaveIsland,
+  onOpenSavedIslands,
+  isSavingIsland = false,
+  saveIslandMessage,
 }: GameHudProps) {
   const stars =
     phase === "success" && result
@@ -131,6 +145,46 @@ export function GameHud({
         >
           New archipelago
         </button>
+        {onLoadLargeMap && !isLargeMap ? (
+          <button
+            type="button"
+            onClick={onLoadLargeMap}
+            disabled={disabled}
+            className="rounded-lg border border-violet-300/30 px-4 py-2 text-sm font-medium text-violet-100 transition hover:bg-violet-400/10 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            Large archipelago
+          </button>
+        ) : null}
+        {onLoadStandardMap && isLargeMap ? (
+          <button
+            type="button"
+            onClick={onLoadStandardMap}
+            disabled={disabled}
+            className="rounded-lg border border-violet-300/30 px-4 py-2 text-sm font-medium text-violet-100 transition hover:bg-violet-400/10 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            Standard map
+          </button>
+        ) : null}
+        {onSaveIsland ? (
+          <button
+            type="button"
+            onClick={onSaveIsland}
+            disabled={disabled || isSavingIsland}
+            className="rounded-lg border border-emerald-300/30 px-4 py-2 text-sm font-medium text-emerald-100 transition hover:bg-emerald-400/10 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {isSavingIsland ? "Saving…" : "Save island"}
+          </button>
+        ) : null}
+        {onOpenSavedIslands ? (
+          <button
+            type="button"
+            onClick={onOpenSavedIslands}
+            disabled={disabled}
+            className="rounded-lg border border-white/15 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            Saved islands
+          </button>
+        ) : null}
         {hasSubmitted && onToggleOptimalPath ? (
           <button
             type="button"
@@ -142,6 +196,10 @@ export function GameHud({
           </button>
         ) : null}
       </div>
+
+      {saveIslandMessage ? (
+        <p className="text-xs text-emerald-200/80">{saveIslandMessage}</p>
+      ) : null}
 
       {hasSubmitted ? (
         <div className="flex flex-wrap gap-3 text-[11px] text-sky-100/55">
