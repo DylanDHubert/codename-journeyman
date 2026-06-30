@@ -7,6 +7,7 @@ import {
   BRIDGE_SUBCELLS,
   collectBridgePylonCorners,
   drawBridgePylon,
+  drawMarshBridgeNails,
   type BridgeWoodField,
 } from "@/lib/rendering/bridgeWood";
 import type { Puzzle } from "@/lib/game/types";
@@ -57,11 +58,21 @@ export function drawBridgeSurface(
         );
       }
     }
+
+    const cellIndex = row * cols + col;
+    if (puzzle.cells[cellIndex]!.kind === "marsh") {
+      drawMarshBridgeNails(ctx, puzzle, row, col, originX, originY, cellSize);
+    }
   }
 
-  const pylonCorners = collectBridgePylonCorners(bridges, cellSize, gap);
-  for (const { x, y } of pylonCorners) {
-    drawBridgePylon(ctx, x, y, cellSize);
+  const pylonCorners = collectBridgePylonCorners(
+    puzzle,
+    bridges,
+    cellSize,
+    gap,
+  );
+  for (const { x, y, iron } of pylonCorners) {
+    drawBridgePylon(ctx, x, y, cellSize, iron);
   }
 }
 
