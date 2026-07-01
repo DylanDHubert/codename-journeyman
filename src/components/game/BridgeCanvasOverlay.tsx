@@ -11,6 +11,7 @@ import {
   drawMarshBridgeNails,
   type BridgeWoodField,
 } from "@/lib/rendering/bridgeWood";
+import { terrainSubcellRect, terrainSubcellSize } from "@/lib/rendering/terrainBorders";
 import type { Puzzle } from "@/lib/game/types";
 
 type BridgeCanvasOverlayProps = {
@@ -30,7 +31,7 @@ export function drawBridgeSurface(
 ): void {
   const { rows, cols } = puzzle;
   const subcells = BRIDGE_SUBCELLS;
-  const subSize = Math.max(1, Math.floor(cellSize / subcells));
+  const subSize = terrainSubcellSize(cellSize, subcells);
   const stride = cellSize + gap;
 
   ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
@@ -50,13 +51,17 @@ export function drawBridgeSurface(
     for (let subRow = 0; subRow < subcells; subRow += 1) {
       for (let subCol = 0; subCol < subcells; subCol += 1) {
         const { r, g, b } = bridgeWood.sampleDeck(row, col, subRow, subCol);
-        ctx.fillStyle = `rgb(${r} ${g} ${b})`;
-        ctx.fillRect(
-          originX + subCol * subSize,
-          originY + subRow * subSize,
+        const rect = terrainSubcellRect(
+          originX,
+          originY,
+          cellSize,
+          subcells,
           subSize,
-          subSize,
+          subCol,
+          subRow,
         );
+        ctx.fillStyle = `rgb(${r} ${g} ${b})`;
+        ctx.fillRect(rect.x, rect.y, rect.width, rect.height);
       }
     }
   }

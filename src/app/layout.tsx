@@ -13,9 +13,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Bridge the Isles",
+  title: "Codename: Journeyman",
   description:
-    "Daily archipelago puzzle — connect X to Y with the fewest bridges.",
+    "Bridge the Isles — daily archipelago puzzles and island crafting.",
 };
 
 export default function RootLayout({

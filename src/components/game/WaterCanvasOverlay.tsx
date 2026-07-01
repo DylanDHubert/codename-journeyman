@@ -19,7 +19,11 @@ import {
   WATER_SUBCELLS,
   type WaterNoiseField,
 } from "@/lib/rendering/waterNoise";
-import { terrainTexturePixelSize } from "@/lib/rendering/terrainBorders";
+import {
+  terrainSubcellRect,
+  terrainSubcellSize,
+  terrainTexturePixelSize,
+} from "@/lib/rendering/terrainBorders";
 import type { Puzzle } from "@/lib/game/types";
 
 type WaterCanvasOverlayProps = {
@@ -285,7 +289,7 @@ export function drawWaterSurface(
 ): void {
   const { rows, cols } = puzzle;
   const subcells = WATER_SUBCELLS;
-  const subSize = Math.max(1, Math.floor(cellSize / subcells));
+  const subSize = terrainSubcellSize(cellSize, subcells);
   const stride = cellSize + gap;
 
   ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
@@ -306,15 +310,24 @@ export function drawWaterSurface(
 
       for (let subRow = 0; subRow < subcells; subRow += 1) {
         for (let subCol = 0; subCol < subcells; subCol += 1) {
+          const rect = terrainSubcellRect(
+            originX,
+            originY,
+            cellSize,
+            subcells,
+            subSize,
+            subCol,
+            subRow,
+          );
           paintWaterBlock(
             ctx,
             context,
             waterNoise,
             waterPhase,
-            originX + subCol * subSize,
-            originY + subRow * subSize,
-            subSize,
-            subSize,
+            rect.x,
+            rect.y,
+            rect.width,
+            rect.height,
             row,
             col,
             subRow,

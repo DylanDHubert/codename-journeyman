@@ -19,6 +19,28 @@ export function terrainGridGap(cellSize: number): number {
   return terrainTexturePixelSize(cellSize);
 }
 
+export function terrainSubcellSize(cellSize: number, subcells: number): number {
+  return Math.max(1, Math.floor(cellSize / subcells));
+}
+
+/** LAST SUB-CELL ABSORBS REMAINDER SO THE FULL CELL IS PAINTED */
+export function terrainSubcellRect(
+  originX: number,
+  originY: number,
+  cellSize: number,
+  subcells: number,
+  subSize: number,
+  subCol: number,
+  subRow: number,
+): { x: number; y: number; width: number; height: number } {
+  return {
+    x: originX + subCol * subSize,
+    y: originY + subRow * subSize,
+    width: subCol === subcells - 1 ? cellSize - subCol * subSize : subSize,
+    height: subRow === subcells - 1 ? cellSize - subRow * subSize : subSize,
+  };
+}
+
 const LAND_TINT_ALPHA = 0.44;
 
 function rgbString(color: Rgb): string {

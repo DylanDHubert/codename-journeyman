@@ -8,6 +8,7 @@ import {
   modulateRockColorRgb,
   type CliffRockField,
 } from "@/lib/rendering/cliffRock";
+import { terrainSubcellRect, terrainSubcellSize } from "@/lib/rendering/terrainBorders";
 import type { Puzzle } from "@/lib/game/types";
 
 type CliffCanvasOverlayProps = {
@@ -31,7 +32,7 @@ export function drawCliffSurface(
 ): void {
   const { rows, cols } = puzzle;
   const subcells = CLIFF_SUBCELLS;
-  const subSize = Math.max(1, Math.floor(cellSize / subcells));
+  const subSize = terrainSubcellSize(cellSize, subcells);
   const stride = cellSize + gap;
 
   ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
@@ -54,13 +55,17 @@ export function drawCliffSurface(
         for (let subCol = 0; subCol < subcells; subCol += 1) {
           const noise = cliffRock.sampleNoise(row, col, subRow, subCol);
           const { r, g, b } = modulateRockColorRgb(base.rgb, noise);
-          ctx.fillStyle = `rgb(${r} ${g} ${b})`;
-          ctx.fillRect(
-            originX + subCol * subSize,
-            originY + subRow * subSize,
+          const rect = terrainSubcellRect(
+            originX,
+            originY,
+            cellSize,
+            subcells,
             subSize,
-            subSize,
+            subCol,
+            subRow,
           );
+          ctx.fillStyle = `rgb(${r} ${g} ${b})`;
+          ctx.fillRect(rect.x, rect.y, rect.width, rect.height);
         }
       }
     }

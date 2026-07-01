@@ -22,12 +22,91 @@ type GameBoardProps = {
   optimalPath?: CellCoord[];
   showOptimalPath?: boolean;
   showComponents: boolean;
-  onToggleBridge: (row: number, col: number) => void;
+  interactive?: boolean;
+  sizing?: "play" | "contain";
+  onToggleBridge?: (row: number, col: number) => void;
 };
 
 const MAX_CELL = 44;
 const MIN_CELL = 24;
+const CONTAIN_MIN_CELL = 4;
 const BOARD_PADDING = 24;
+const BOARD_CARD_PADDING = 12;
+const BOARD_CARD_BORDER = 1;
+
+function gridPixelSize(
+  cellSize: number,
+  rows: number,
+  cols: number,
+): { width: number; height: number } {
+  const gap = terrainGridGap(cellSize);
+  return {
+    width: cols * cellSize + Math.max(0, cols - 1) * gap,
+    height: rows * cellSize + Math.max(0, rows - 1) * gap,
+  };
+}
+
+function boardCardPixelSize(
+  cellSize: number,
+  rows: number,
+  cols: number,
+): { width: number; height: number } {
+  const grid = gridPixelSize(cellSize, rows, cols);
+  const chrome = BOARD_CARD_PADDING * 2 + BOARD_CARD_BORDER * 2;
+
+  return {
+    width: grid.width + chrome,
+    height: grid.height + chrome,
+  };
+}
+
+function resolveCellSize(
+  width: number,
+  height: number,
+  rows: number,
+  cols: number,
+  sizing: "play" | "contain",
+): number {
+  if (sizing === "contain") {
+    if (width <= 0 || height <= 0) {
+      return CONTAIN_MIN_CELL;
+    }
+
+    let lo = CONTAIN_MIN_CELL;
+    let hi = 512;
+    let best = CONTAIN_MIN_CELL;
+
+    while (lo <= hi) {
+      const mid = Math.floor((lo + hi) / 2);
+      const card = boardCardPixelSize(mid, rows, cols);
+
+      if (card.width <= width && card.height <= height) {
+        best = mid;
+        lo = mid + 1;
+      } else {
+        hi = mid - 1;
+      }
+    }
+
+    return best;
+  }
+
+  const minCell = MIN_CELL;
+  const maxCell = MAX_CELL;
+
+  let gap = terrainGridGap(maxCell);
+  let fromWidth = (width - gap * (cols - 1)) / cols;
+  let fromHeight = (height - gap * (rows - 1)) / rows;
+
+  let next = Math.floor(Math.min(fromWidth, fromHeight, maxCell));
+  next = Math.max(minCell, next);
+  gap = terrainGridGap(next);
+  fromWidth = (width - gap * (cols - 1)) / cols;
+  fromHeight = (height - gap * (rows - 1)) / rows;
+  next = Math.floor(Math.min(fromWidth, fromHeight, maxCell));
+
+  return Math.max(minCell, next);
+}
 
 export function GameBoard({
   puzzle,
@@ -37,10 +116,14 @@ export function GameBoard({
   optimalPath = [],
   showOptimalPath = false,
   showComponents,
+  interactive = true,
+  sizing = "play",
   onToggleBridge,
 }: GameBoardProps) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const [cellSize, setCellSize] = useState(MAX_CELL);
+  const [cellSize, setCellSize] = useState(() =>
+    sizing === "contain" ? CONTAIN_MIN_CELL : MAX_CELL,
+  );
   const gridGap = terrainGridGap(cellSize);
 
   const context = useMemo(
@@ -80,26 +163,25 @@ export function GameBoard({
     }
 
     const updateSize = () => {
+      if (sizing === "contain") {
+        setCellSize(
+          resolveCellSize(
+            element.clientWidth,
+            element.clientHeight,
+            puzzle.rows,
+            puzzle.cols,
+            sizing,
+          ),
+        );
+        return;
+      }
+
       const width = element.clientWidth - BOARD_PADDING;
-      const viewportHeight = window.innerHeight;
-      const heightBudget = Math.min(viewportHeight * 0.58, 640);
+      const heightBudget = Math.min(window.innerHeight * 0.58, 640);
 
-      let gap = terrainGridGap(MAX_CELL);
-      let fromWidth =
-        (width - gap * (puzzle.cols - 1)) / puzzle.cols;
-      let fromHeight =
-        (heightBudget - BOARD_PADDING - gap * (puzzle.rows - 1)) /
-        puzzle.rows;
-
-      let next = Math.floor(Math.min(fromWidth, fromHeight, MAX_CELL));
-      next = Math.max(MIN_CELL, next);
-      gap = terrainGridGap(next);
-      fromWidth = (width - gap * (puzzle.cols - 1)) / puzzle.cols;
-      fromHeight =
-        (heightBudget - BOARD_PADDING - gap * (puzzle.rows - 1)) /
-        puzzle.rows;
-      next = Math.floor(Math.min(fromWidth, fromHeight, MAX_CELL));
-      setCellSize(Math.max(MIN_CELL, next));
+      setCellSize(
+        resolveCellSize(width, heightBudget, puzzle.rows, puzzle.cols, sizing),
+      );
     };
 
     updateSize();
@@ -111,11 +193,24 @@ export function GameBoard({
       observer.disconnect();
       window.removeEventListener("resize", updateSize);
     };
-  }, [puzzle.rows, puzzle.cols]);
+  }, [puzzle.rows, puzzle.cols, sizing]);
 
   return (
-    <div ref={containerRef} className="w-full max-w-md lg:max-w-none lg:flex-1">
-      <div className="mx-auto w-fit max-w-full rounded-2xl border border-sky-950/20 bg-sky-950/10 p-3 shadow-xl shadow-sky-950/20">
+    <div
+      ref={containerRef}
+      className={
+        sizing === "contain"
+          ? "flex h-full w-full items-start justify-center"
+          : "w-full max-w-md lg:max-w-none lg:flex-1"
+      }
+    >
+      <div
+        className={
+          sizing === "contain"
+            ? "max-h-full max-w-full shrink-0 rounded-2xl border border-sky-950/20 bg-sky-950/10 p-3 shadow-xl shadow-sky-950/20"
+            : "mx-auto w-fit max-w-full rounded-2xl border border-sky-950/20 bg-sky-950/10 p-3 shadow-xl shadow-sky-950/20"
+        }
+      >
         <div
           className="relative grid"
           style={{
@@ -167,7 +262,7 @@ export function GameBoard({
                 col={col}
                 context={context}
                 cellSize={cellSize}
-                interactive
+                interactive={interactive}
                 onToggle={onToggleBridge}
               />
             )),
