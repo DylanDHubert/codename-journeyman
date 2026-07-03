@@ -1,10 +1,11 @@
 "use client";
 
-import { useMemo, type ReactNode } from "react";
+import { useCallback, useMemo, useState, type ReactNode } from "react";
 
 import { TilePalette } from "@/components/create/TilePalette";
 import { GameBoard } from "@/components/game/GameBoard";
-import type { Puzzle, PuzzleGrid } from "@/lib/game/types";
+import { isLandKind } from "@/lib/game/tiles";
+import type { Puzzle, PuzzleCell, PuzzleGrid, TileKind } from "@/lib/game/types";
 
 type DraftPuzzleViewProps = {
   puzzle: PuzzleGrid;
@@ -12,13 +13,6 @@ type DraftPuzzleViewProps = {
 
 const PANEL_FRAME =
   "overflow-hidden rounded-xl border border-white/15 bg-black/15 shadow-[inset_0_0_0_1px_rgb(255_255_255_/_0.04)]";
-
-function toRenderablePuzzle(puzzle: PuzzleGrid): Puzzle {
-  return {
-    ...puzzle,
-    parCost: 0,
-  };
-}
 
 function PlaceholderPanel({
   eyebrow,
@@ -38,9 +32,41 @@ function PlaceholderPanel({
 }
 
 export function DraftPuzzleView({ puzzle }: DraftPuzzleViewProps) {
-  const renderPuzzle = useMemo(() => toRenderablePuzzle(puzzle), [puzzle]);
+  const [cells, setCells] = useState<PuzzleCell[]>(puzzle.cells);
+  const [selectedKind, setSelectedKind] = useState<TileKind | null>(null);
+
+  const renderPuzzle = useMemo<Puzzle>(
+    () => ({ ...puzzle, cells, parCost: 0 }),
+    [puzzle, cells],
+  );
   const emptyBridges = useMemo(() => new Set<string>(), []);
   const emptyPath = useMemo(() => new Set<string>(), []);
+
+  const handlePaintCell = useCallback(
+    (row: number, col: number) => {
+      if (!selectedKind) {
+        return;
+      }
+
+      setCells((prev) => {
+        const index = row * puzzle.cols + col;
+        const existing = prev[index];
+        if (!existing || existing.kind === selectedKind) {
+          return prev;
+        }
+
+        const isLand = isLandKind(selectedKind);
+        const next = prev.slice();
+        next[index] = {
+          ...existing,
+          kind: selectedKind,
+          componentId: isLand ? (existing.componentId >= 0 ? existing.componentId : 0) : -1,
+        };
+        return next;
+      });
+    },
+    [selectedKind, puzzle.cols],
+  );
 
   return (
     <div className="flex h-full min-h-0 w-full overflow-hidden">
@@ -53,6 +79,8 @@ export function DraftPuzzleView({ puzzle }: DraftPuzzleViewProps) {
               pathKeys={emptyPath}
               showComponents={false}
               interactive={false}
+              editable={selectedKind !== null}
+              onCellClick={handlePaintCell}
               sizing="contain"
             />
           </div>
@@ -67,8 +95,11 @@ export function DraftPuzzleView({ puzzle }: DraftPuzzleViewProps) {
         <p className="text-[10px] font-medium uppercase tracking-[0.2em] text-sky-200/50">
           Tiles
         </p>
+        <p className="mt-1 text-[11px] text-sky-100/45">
+          {selectedKind ? "Click the map to place." : "Select a tile to place."}
+        </p>
         <div className="mt-4">
-          <TilePalette />
+          <TilePalette selectedKind={selectedKind} onSelect={setSelectedKind} />
         </div>
       </aside>
     </div>

@@ -23,8 +23,10 @@ type GameBoardProps = {
   showOptimalPath?: boolean;
   showComponents: boolean;
   interactive?: boolean;
+  editable?: boolean;
   sizing?: "play" | "contain";
   onToggleBridge?: (row: number, col: number) => void;
+  onCellClick?: (row: number, col: number) => void;
 };
 
 const MAX_CELL = 44;
@@ -117,9 +119,12 @@ export function GameBoard({
   showOptimalPath = false,
   showComponents,
   interactive = true,
+  editable = false,
   sizing = "play",
   onToggleBridge,
+  onCellClick,
 }: GameBoardProps) {
+  const handleCellActivate = editable ? onCellClick : onToggleBridge;
   const containerRef = useRef<HTMLDivElement>(null);
   const [cellSize, setCellSize] = useState(() =>
     sizing === "contain" ? CONTAIN_MIN_CELL : MAX_CELL,
@@ -263,7 +268,8 @@ export function GameBoard({
                 context={context}
                 cellSize={cellSize}
                 interactive={interactive}
-                onToggle={onToggleBridge}
+                editable={editable}
+                onToggle={handleCellActivate}
               />
             )),
           )}

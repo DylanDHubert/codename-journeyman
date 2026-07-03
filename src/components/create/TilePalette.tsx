@@ -1,7 +1,5 @@
 "use client";
 
-import { useState } from "react";
-
 import { TileSwatch } from "@/components/create/TileSwatch";
 import type { TileKind } from "@/lib/game/types";
 
@@ -26,22 +24,25 @@ const SWATCH_SIZE = 40;
 // MATCHES THE IN-GAME CELL OUTLINE (drawWhiteGrid)
 const CELL_OUTLINE = "rgb(255 255 255 / 0.72)";
 
-export function TilePalette() {
-  const [selected, setSelected] = useState<string | null>(null);
+type TilePaletteProps = {
+  selectedKind: TileKind | null;
+  onSelect: (kind: TileKind | null) => void;
+};
 
-  const toggle = (id: string) => {
-    setSelected((current) => (current === id ? null : id));
+export function TilePalette({ selectedKind, onSelect }: TilePaletteProps) {
+  const toggle = (kind: TileKind) => {
+    onSelect(selectedKind === kind ? null : kind);
   };
 
   return (
     <div className="grid grid-cols-3 justify-items-center gap-x-3 gap-y-4">
       {PALETTE_TILES.map((tile) => {
-        const isSelected = selected === tile.id;
+        const isSelected = selectedKind === tile.kind;
         return (
           <div key={tile.id} className="flex flex-col items-center gap-1.5">
             <button
               type="button"
-              onClick={() => toggle(tile.id)}
+              onClick={() => toggle(tile.kind)}
               aria-pressed={isSelected}
               title={tile.label}
               className={[

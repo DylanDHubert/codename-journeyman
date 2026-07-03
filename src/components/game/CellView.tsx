@@ -15,6 +15,7 @@ type CellViewProps = {
   context: AppearanceContext;
   cellSize: number;
   interactive: boolean;
+  editable?: boolean;
   onToggle?: (row: number, col: number) => void;
 };
 
@@ -24,12 +25,15 @@ export function CellView({
   context,
   cellSize,
   interactive,
+  editable = false,
   onToggle,
 }: CellViewProps) {
   const appearance = appearanceForCell(row, col, context);
   const accent = overlayAccent(appearance.overlay);
   const label = overlayLabel(appearance.overlay);
   const bridgeable = canPlaceBridge(context.puzzle, row, col);
+  // EDIT MODE PAINTS ANY CELL; PLAY MODE ONLY TOGGLES BRIDGEABLE WATER
+  const clickable = editable || (interactive && bridgeable);
 
   const style: CSSProperties = {
     width: cellSize,
@@ -42,11 +46,11 @@ export function CellView({
     <button
       type="button"
       aria-label={`Cell ${row + 1}, ${col + 1}`}
-      disabled={!interactive || !bridgeable}
+      disabled={!clickable}
       onClick={() => onToggle?.(row, col)}
       className={[
         "relative transition-transform duration-100",
-        interactive && bridgeable
+        clickable
           ? "cursor-pointer hover:brightness-110 active:scale-95"
           : "cursor-default",
         appearance.overlay === "path" ? "brightness-110" : "",
