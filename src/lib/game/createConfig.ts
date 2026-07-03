@@ -9,27 +9,26 @@ export type CreateGenerationConfig = {
   noise: NoiseConfig;
 };
 
+export const CREATE_FIXED_GRID: GridConfig = {
+  rows: 25,
+  cols: 47,
+};
+
+/** LEGACY — CREATE FLOW USES FIXED GRID ONLY */
 export const CREATE_GRID_LIMITS = {
-  rows: { min: 4, max: 64 },
-  cols: { min: 4, max: 64 },
+  rows: { min: CREATE_FIXED_GRID.rows, max: CREATE_FIXED_GRID.rows },
+  cols: { min: CREATE_FIXED_GRID.cols, max: CREATE_FIXED_GRID.cols },
 } as const;
 
 export const DEFAULT_CREATE_CONFIG: CreateGenerationConfig = {
-  grid: { ...DEFAULT_GENERATION_CONFIG.grid },
+  grid: { ...CREATE_FIXED_GRID },
   noise: { ...DEFAULT_GENERATION_CONFIG.noise },
 };
 
 const CREATE_STORAGE_KEY = "bridge-isles-create-config";
 
-function clamp(value: number, min: number, max: number): number {
-  return Math.min(max, Math.max(min, value));
-}
-
-export function clampCreateGrid(rows: number, cols: number): GridConfig {
-  return {
-    rows: clamp(rows, CREATE_GRID_LIMITS.rows.min, CREATE_GRID_LIMITS.rows.max),
-    cols: clamp(cols, CREATE_GRID_LIMITS.cols.min, CREATE_GRID_LIMITS.cols.max),
-  };
+export function clampCreateGrid(_rows?: number, _cols?: number): GridConfig {
+  return { ...CREATE_FIXED_GRID };
 }
 
 export type CreateConfigInput = {
@@ -43,10 +42,7 @@ export function normalizeCreateConfig(
   const base = DEFAULT_CREATE_CONFIG;
 
   return {
-    grid: clampCreateGrid(
-      partial.grid?.rows ?? base.grid.rows,
-      partial.grid?.cols ?? base.grid.cols,
-    ),
+    grid: clampCreateGrid(),
     noise: {
       landThreshold: partial.noise?.landThreshold ?? base.noise.landThreshold,
       falloffStrength: partial.noise?.falloffStrength ?? base.noise.falloffStrength,

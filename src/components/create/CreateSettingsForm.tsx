@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import {
-  CREATE_GRID_LIMITS,
+  CREATE_FIXED_GRID,
   createConfigKey,
   createViewSearchParams,
   DEFAULT_CREATE_CONFIG,
@@ -71,15 +71,6 @@ export function CreateSettingsForm() {
     setSeed(randomCreateSeed());
   }, []);
 
-  const updateGrid = useCallback((patch: Partial<CreateGenerationConfig["grid"]>) => {
-    setDraft((current) =>
-      normalizeCreateConfig({
-        ...current,
-        grid: { ...current.grid, ...patch },
-      }),
-    );
-  }, []);
-
   const updateNoise = useCallback(
     (patch: Partial<CreateGenerationConfig["noise"]>) => {
       setDraft((current) =>
@@ -119,35 +110,18 @@ export function CreateSettingsForm() {
         </p>
         <h2 className="text-xl font-semibold text-white">Archipelago settings</h2>
         <p className="text-sm text-sky-100/65">
-          One random pass — no par search, no solve step. Tune size and noise, then open
-          the draft map.
+          One random pass — no par search, no solve step. Tune noise, then open the
+          draft map.
         </p>
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
-        <label className="flex flex-col gap-1 text-xs text-sky-100/80">
-          Rows (height)
-          <input
-            type="number"
-            min={CREATE_GRID_LIMITS.rows.min}
-            max={CREATE_GRID_LIMITS.rows.max}
-            value={draft.grid.rows}
-            onChange={(event) => updateGrid({ rows: Number(event.target.value) })}
-            className="rounded-md border border-white/10 bg-black/30 px-2 py-1 font-mono text-sm text-white"
-          />
-        </label>
-        <label className="flex flex-col gap-1 text-xs text-sky-100/80">
-          Cols (width)
-          <input
-            type="number"
-            min={CREATE_GRID_LIMITS.cols.min}
-            max={CREATE_GRID_LIMITS.cols.max}
-            value={draft.grid.cols}
-            onChange={(event) => updateGrid({ cols: Number(event.target.value) })}
-            className="rounded-md border border-white/10 bg-black/30 px-2 py-1 font-mono text-sm text-white"
-          />
-        </label>
-      </div>
+      <p className="rounded-md border border-white/10 bg-black/20 px-3 py-2 text-xs text-sky-100/70">
+        Fixed grid{" "}
+        <span className="font-mono text-sky-50">
+          {CREATE_FIXED_GRID.cols}×{CREATE_FIXED_GRID.rows}
+        </span>{" "}
+        (cols × rows)
+      </p>
 
       <div className="space-y-3">
         <p className="text-[10px] font-medium uppercase tracking-wider text-sky-200/50">
@@ -246,7 +220,7 @@ export function CreateSettingsForm() {
       </div>
 
       <p className="text-[10px] leading-relaxed text-sky-100/40">
-        Grid {draft.grid.rows}×{draft.grid.cols} · config key{" "}
+        Grid {CREATE_FIXED_GRID.cols}×{CREATE_FIXED_GRID.rows} · config key{" "}
         <span className="font-mono text-sky-100/55">{appliedKey.slice(0, 42)}…</span>
       </p>
     </div>
