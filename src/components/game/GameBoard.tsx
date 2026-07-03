@@ -7,11 +7,14 @@ import { BridgeCanvasOverlay } from "@/components/game/BridgeCanvasOverlay";
 import { CellView } from "@/components/game/CellView";
 import { CliffCanvasOverlay } from "@/components/game/CliffCanvasOverlay";
 import { GrassCanvasOverlay } from "@/components/game/GrassCanvasOverlay";
+import { ObjectCanvasOverlay } from "@/components/game/ObjectCanvasOverlay";
 import { PathLineOverlay, type PathLineStyle } from "@/components/game/PathLineOverlay";
+import { RouteCanvasOverlay, type DraftRoute } from "@/components/game/RouteCanvasOverlay";
 import { TerrainBorderOverlay } from "@/components/game/TerrainBorderOverlay";
 import { WaterCanvasOverlay } from "@/components/game/WaterCanvasOverlay";
 import { createAppearanceContext } from "@/lib/rendering/cellAppearance";
 import { terrainGridGap } from "@/lib/rendering/terrainBorders";
+import type { LevelObject, LevelRoute } from "@/lib/game/level/types";
 import type { CellCoord, Puzzle } from "@/lib/game/types";
 
 type GameBoardProps = {
@@ -25,6 +28,11 @@ type GameBoardProps = {
   interactive?: boolean;
   editable?: boolean;
   sizing?: "play" | "contain";
+  /** OBJECT LAYER (BUILDINGS) DRAWN OVER TERRAIN */
+  objects?: LevelObject[];
+  /** ROUTE LAYER (PIRATE/MERCHANT PATHS) DRAWN OVER OBJECTS */
+  routes?: LevelRoute[];
+  draftRoute?: DraftRoute | null;
   onToggleBridge?: (row: number, col: number) => void;
   onCellClick?: (row: number, col: number) => void;
 };
@@ -121,6 +129,9 @@ export function GameBoard({
   interactive = true,
   editable = false,
   sizing = "play",
+  objects,
+  routes,
+  draftRoute,
   onToggleBridge,
   onCellClick,
 }: GameBoardProps) {
@@ -259,6 +270,25 @@ export function GameBoard({
             cellSize={cellSize}
             gap={gridGap}
           />
+          {objects && objects.length > 0 ? (
+            <ObjectCanvasOverlay
+              objects={objects}
+              rows={puzzle.rows}
+              cols={puzzle.cols}
+              cellSize={cellSize}
+              gap={gridGap}
+            />
+          ) : null}
+          {(routes && routes.length > 0) || draftRoute ? (
+            <RouteCanvasOverlay
+              routes={routes ?? []}
+              draftRoute={draftRoute}
+              rows={puzzle.rows}
+              cols={puzzle.cols}
+              cellSize={cellSize}
+              gap={gridGap}
+            />
+          ) : null}
           {Array.from({ length: puzzle.rows }, (_, row) =>
             Array.from({ length: puzzle.cols }, (_, col) => (
               <CellView
