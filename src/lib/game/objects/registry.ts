@@ -146,6 +146,8 @@ export type RouteDefinition = {
   closedByDefault: boolean;
   allowedTerrain: TileKind[];
   color: string;
+  /** TRANSIT SPEED IN CELLS PER SECOND */
+  speed: number;
   effects: Effect[];
 };
 
@@ -156,6 +158,7 @@ export const ROUTE_DEFINITIONS: Record<string, RouteDefinition> = {
     closedByDefault: true,
     allowedTerrain: [...WATER_KINDS],
     color: "rgb(248 113 113)",
+    speed: 1.8,
     effects: [],
   },
   merchant: {
@@ -164,6 +167,7 @@ export const ROUTE_DEFINITIONS: Record<string, RouteDefinition> = {
     closedByDefault: false,
     allowedTerrain: [...WATER_KINDS],
     color: "rgb(45 212 191)",
+    speed: 1.2,
     effects: [],
   },
 };

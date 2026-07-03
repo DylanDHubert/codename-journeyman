@@ -10,6 +10,7 @@ import { GrassCanvasOverlay } from "@/components/game/GrassCanvasOverlay";
 import { ObjectCanvasOverlay } from "@/components/game/ObjectCanvasOverlay";
 import { PathLineOverlay, type PathLineStyle } from "@/components/game/PathLineOverlay";
 import { RouteCanvasOverlay, type DraftRoute } from "@/components/game/RouteCanvasOverlay";
+import { RouteShipOverlay } from "@/components/game/RouteShipOverlay";
 import { TerrainBorderOverlay } from "@/components/game/TerrainBorderOverlay";
 import { WaterCanvasOverlay } from "@/components/game/WaterCanvasOverlay";
 import { createAppearanceContext } from "@/lib/rendering/cellAppearance";
@@ -39,6 +40,7 @@ type GameBoardProps = {
 
 const MAX_CELL = 44;
 const MIN_CELL = 24;
+const emptyRoutes: LevelRoute[] = [];
 const CONTAIN_MIN_CELL = 4;
 const BOARD_PADDING = 24;
 const BOARD_CARD_PADDING = 12;
@@ -279,9 +281,18 @@ export function GameBoard({
               gap={gridGap}
             />
           ) : null}
-          {(routes && routes.length > 0) || draftRoute ? (
+          {routes && routes.length > 0 ? (
+            <RouteShipOverlay
+              routes={routes}
+              rows={puzzle.rows}
+              cols={puzzle.cols}
+              cellSize={cellSize}
+              gap={gridGap}
+            />
+          ) : null}
+          {draftRoute && draftRoute.path.length > 0 ? (
             <RouteCanvasOverlay
-              routes={routes ?? []}
+              routes={emptyRoutes}
               draftRoute={draftRoute}
               rows={puzzle.rows}
               cols={puzzle.cols}
