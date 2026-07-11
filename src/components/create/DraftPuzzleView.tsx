@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { EditorPalette, type EditorTool } from "@/components/create/EditorPalette";
 import { GameBoard } from "@/components/game/GameBoard";
@@ -17,6 +17,12 @@ import {
   canRouteEnter,
 } from "@/lib/game/rules";
 import type { TileKind } from "@/lib/game/types";
+import {
+  DEFAULT_DISPLAY_PREFS,
+  loadDisplayPrefs,
+  normalizeDisplayPrefs,
+  saveDisplayPrefs,
+} from "@/lib/rendering/displayPrefs";
 
 type DraftPuzzleViewProps = {
   level: Level;
@@ -55,9 +61,39 @@ export function DraftPuzzleView({ level: initialLevel }: DraftPuzzleViewProps) {
   const [name, setName] = useState(() => initialLevel.name);
   const [status, setStatus] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [cellGridOpacity, setCellGridOpacity] = useState(
+    DEFAULT_DISPLAY_PREFS.cellGridOpacity,
+  );
+  const [waterDepthInterpolation, setWaterDepthInterpolation] = useState(
+    DEFAULT_DISPLAY_PREFS.waterDepthInterpolation,
+  );
+
+  useEffect(() => {
+    const prefs = loadDisplayPrefs();
+    setCellGridOpacity(prefs.cellGridOpacity);
+    setWaterDepthInterpolation(prefs.waterDepthInterpolation);
+  }, []);
 
   const emptyBridges = useMemo(() => new Set<string>(), []);
   const emptyPath = useMemo(() => new Set<string>(), []);
+
+  const handleCellGridOpacity = (value: number) => {
+    const next = normalizeDisplayPrefs({
+      cellGridOpacity: value,
+      waterDepthInterpolation,
+    }).cellGridOpacity;
+    setCellGridOpacity(next);
+    saveDisplayPrefs({ cellGridOpacity: next });
+  };
+
+  const handleWaterDepthInterpolation = (value: number) => {
+    const next = normalizeDisplayPrefs({
+      cellGridOpacity,
+      waterDepthInterpolation: value,
+    }).waterDepthInterpolation;
+    setWaterDepthInterpolation(next);
+    saveDisplayPrefs({ waterDepthInterpolation: next });
+  };
 
   // SELECTING A ROUTE TOOL STARTS/KEEPS A DRAFT ROUTE; OTHER TOOLS CLEAR IT
   const handleSelectTool = (next: EditorTool) => {
@@ -246,6 +282,8 @@ export function DraftPuzzleView({ level: initialLevel }: DraftPuzzleViewProps) {
               onCellClick={handleCellClick}
               draftRoute={draftRoute}
               sizing="contain"
+              cellGridOpacity={cellGridOpacity}
+              waterDepthInterpolation={waterDepthInterpolation}
             />
           </div>
         </div>
@@ -316,6 +354,60 @@ export function DraftPuzzleView({ level: initialLevel }: DraftPuzzleViewProps) {
 
       <aside className="flex min-h-0 min-w-0 flex-1 flex-col gap-5 overflow-y-auto border-l border-white/10 bg-black/10 p-4">
         <EditorPalette tool={tool} onSelect={handleSelectTool} />
+
+        {process.env.NODE_ENV === "development" ? (
+          <details className="rounded-md border border-white/10 bg-black/20 open:pb-2">
+            <summary className="cursor-pointer select-none px-2 py-1.5 text-[10px] font-medium uppercase tracking-[0.2em] text-amber-200/70 hover:text-amber-100/90">
+              Dev
+            </summary>
+            <div className="space-y-3 border-t border-white/10 px-2 pt-2">
+              <label className="flex flex-col gap-1">
+                <span className="flex items-baseline justify-between gap-2 text-[11px] text-sky-100/70">
+                  <span>Cell outline</span>
+                  <span className="font-mono text-sky-50">
+                    {cellGridOpacity === 0
+                      ? "off"
+                      : cellGridOpacity.toFixed(2).replace(/\.?0+$/, "")}
+                  </span>
+                </span>
+                <input
+                  type="range"
+                  min={0}
+                  max={1}
+                  step={0.05}
+                  value={cellGridOpacity}
+                  onChange={(event) =>
+                    handleCellGridOpacity(Number(event.target.value))
+                  }
+                  className="h-1.5 w-full cursor-pointer accent-sky-400"
+                />
+              </label>
+
+              <label className="flex flex-col gap-1">
+                <span className="flex items-baseline justify-between gap-2 text-[11px] text-sky-100/70">
+                  <span>Water depth blend</span>
+                  <span className="font-mono text-sky-50">
+                    {waterDepthInterpolation.toFixed(2).replace(/\.?0+$/, "")}
+                  </span>
+                </span>
+                <input
+                  type="range"
+                  min={0}
+                  max={1}
+                  step={0.05}
+                  value={waterDepthInterpolation}
+                  onChange={(event) =>
+                    handleWaterDepthInterpolation(Number(event.target.value))
+                  }
+                  className="h-1.5 w-full cursor-pointer accent-sky-400"
+                />
+                <span className="text-[10px] text-sky-100/40">
+                  0 = per-cell depth · 1 = full neighbor blend
+                </span>
+              </label>
+            </div>
+          </details>
+        ) : null}
 
         <div>
           <p className="text-[10px] font-medium uppercase tracking-[0.2em] text-sky-200/50">

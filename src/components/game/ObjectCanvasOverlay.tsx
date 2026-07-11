@@ -18,7 +18,7 @@ type ObjectCanvasOverlayProps = {
   frameMs?: number;
 };
 
-const DEFAULT_FRAME_MS = 420;
+const DEFAULT_FRAME_MS = 50;
 
 export function drawObjectsSurface(
   ctx: CanvasRenderingContext2D,
@@ -41,12 +41,15 @@ export function drawObjectsSurface(
       continue;
     }
 
+    // STABLE PER-CELL PHASE OFFSET SO ANIMATED OBJECTS DON'T ALL SPIN IN LOCKSTEP
+    const phaseOffset = object.at.row * 5 + object.at.col * 11;
+
     renderer({
       ctx,
       originX: object.at.col * stride,
       originY: object.at.row * stride,
       cellSize,
-      phase,
+      phase: phase + phaseOffset,
     });
   }
 }

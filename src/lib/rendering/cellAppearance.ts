@@ -31,6 +31,7 @@ import {
 } from "./waterFeatures";
 import {
   buildWaterNoiseField,
+  WATER_SUBCELLS,
   type WaterNoiseField,
 } from "./waterNoise";
 
@@ -177,6 +178,54 @@ export function oceanWaterRgbForCell(
   return tileBaseRgb("ocean", depth);
 }
 
+function sampleWaterDepthAt(
+  row: number,
+  col: number,
+  context: AppearanceContext,
+): number {
+  const { view, terrainMaps, maxDepth } = context;
+  const clampedRow = Math.min(view.rows - 1, Math.max(0, row));
+  const clampedCol = Math.min(view.cols - 1, Math.max(0, col));
+  const distance = terrainMaps.distanceFromLand[clampedRow]![clampedCol]!;
+  return waterDepthAt(distance, maxDepth);
+}
+
+/** BILINEAR DEPTH BETWEEN NEIGHBOR CELL CENTERS — WATER PAINT ONLY */
+export function interpolatedWaterDepth(
+  row: number,
+  col: number,
+  subRow: number,
+  subCol: number,
+  context: AppearanceContext,
+  amount: number,
+): number {
+  const cellDepth = sampleWaterDepthAt(row, col, context);
+  if (amount <= 0) {
+    return cellDepth;
+  }
+
+  // CELL DEPTHS LIVE AT CENTERS — SAMPLE IN THAT SPACE
+  const cx = col + (subCol + 0.5) / WATER_SUBCELLS - 0.5;
+  const cy = row + (subRow + 0.5) / WATER_SUBCELLS - 0.5;
+  const x0 = Math.floor(cx);
+  const y0 = Math.floor(cy);
+  const tx = cx - x0;
+  const ty = cy - y0;
+
+  const d00 = sampleWaterDepthAt(y0, x0, context);
+  const d10 = sampleWaterDepthAt(y0, x0 + 1, context);
+  const d01 = sampleWaterDepthAt(y0 + 1, x0, context);
+  const d11 = sampleWaterDepthAt(y0 + 1, x0 + 1, context);
+
+  const blended =
+    d00 * (1 - tx) * (1 - ty) +
+    d10 * tx * (1 - ty) +
+    d01 * (1 - tx) * ty +
+    d11 * tx * ty;
+
+  return cellDepth + (blended - cellDepth) * Math.min(1, amount);
+}
+
 export function waterBaseForCell(
   row: number,
   col: number,
@@ -196,6 +245,56 @@ export function waterBaseForCell(
     rgb: tileBaseRgb(kind, depth),
     kind,
   };
+}
+
+/** WATER SUB-CELL BASE — DEPTH MAY BE INTERPOLATED; KIND STAYS PER-CELL */
+export function waterBaseForSubcell(
+  row: number,
+  col: number,
+  subRow: number,
+  subCol: number,
+  context: AppearanceContext,
+  depthInterpolation: number,
+): { rgb: { r: number; g: number; b: number }; kind: TileKind } | null {
+  const { view } = context;
+  const kind = terrainKindAt(view, row, col)!;
+
+  if (!isAnimatedWaterKind(kind)) {
+    return null;
+  }
+
+  const depth = interpolatedWaterDepth(
+    row,
+    col,
+    subRow,
+    subCol,
+    context,
+    depthInterpolation,
+  );
+
+  return {
+    rgb: tileBaseRgb(kind, depth),
+    kind,
+  };
+}
+
+export function oceanWaterRgbForSubcell(
+  row: number,
+  col: number,
+  subRow: number,
+  subCol: number,
+  context: AppearanceContext,
+  depthInterpolation: number,
+): { r: number; g: number; b: number } {
+  const depth = interpolatedWaterDepth(
+    row,
+    col,
+    subRow,
+    subCol,
+    context,
+    depthInterpolation,
+  );
+  return tileBaseRgb("ocean", depth);
 }
 
 export function beachBaseForCell(

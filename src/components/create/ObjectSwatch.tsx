@@ -9,7 +9,7 @@ import {
   objectRenderer,
 } from "@/lib/rendering/objectRenderers";
 
-const FRAME_MS = 420;
+const FRAME_MS = 50;
 
 // PALETTE PREVIEW — BASE TERRAIN (VIA TileSwatch) WITH THE OBJECT DRAWN ON TOP
 export function ObjectSwatch({

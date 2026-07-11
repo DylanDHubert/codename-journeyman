@@ -5,6 +5,7 @@ import {
   type AppearanceContext,
 } from "@/lib/rendering/cellAppearance";
 import { terrainSurfaceRgb } from "@/lib/rendering/cellAppearance";
+import { DEFAULT_DISPLAY_PREFS } from "@/lib/rendering/displayPrefs";
 import type { TileKind } from "@/lib/game/types";
 import type { TerrainView } from "@/lib/rendering/terrainView";
 import { terrainKindAt } from "@/lib/rendering/terrainView";
@@ -261,10 +262,15 @@ function drawWhiteGrid(
   cols: number,
   cellSize: number,
   gap: number,
+  opacity: number,
 ): void {
+  if (opacity <= 0) {
+    return;
+  }
+
   const stride = cellSize + gap;
 
-  ctx.fillStyle = "rgb(255 255 255 / 0.72)";
+  ctx.fillStyle = `rgb(255 255 255 / ${opacity})`;
 
   for (let row = 0; row < rows; row += 1) {
     for (let col = 0; col < cols; col += 1) {
@@ -289,6 +295,7 @@ export function drawTerrainBorders(
   context: AppearanceContext,
   cellSize: number,
   gap: number,
+  cellGridOpacity = DEFAULT_DISPLAY_PREFS.cellGridOpacity,
 ): void {
   const { rows, cols } = view;
   const stride = cellSize + gap;
@@ -345,5 +352,5 @@ export function drawTerrainBorders(
     }
   }
 
-  drawWhiteGrid(ctx, view, context, rows, cols, cellSize, gap);
+  drawWhiteGrid(ctx, view, context, rows, cols, cellSize, gap, cellGridOpacity);
 }

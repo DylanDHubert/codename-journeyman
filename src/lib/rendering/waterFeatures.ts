@@ -87,38 +87,35 @@ export function applyMarshSplotches(
   return color;
 }
 
-export const WHIRLPOOL_SPIRAL_FRAMES = 4;
-
-export function resolveWhirlpoolSpiralFrame(waterPhase: number): number {
-  return Math.floor(waterPhase / 2) % WHIRLPOOL_SPIRAL_FRAMES;
-}
+/** RADIANS ADVANCED PER ANIMATION PHASE TICK — FULL CIRCLE, NO SNAP */
+export const WHIRLPOOL_SPIN_PER_PHASE = Math.PI / 40;
 
 export function drawWhirlpoolSpiral(
   ctx: CanvasRenderingContext2D,
   originX: number,
   originY: number,
   cellSize: number,
-  frame: number,
+  phase: number,
 ): void {
   const centerX = originX + cellSize / 2;
   const centerY = originY + cellSize / 2;
-  const rotation =
-    ((frame % WHIRLPOOL_SPIRAL_FRAMES) / WHIRLPOOL_SPIRAL_FRAMES) * Math.PI * 0.42;
+  const rotation = phase * WHIRLPOOL_SPIN_PER_PHASE;
   const maxRadius = cellSize * 0.34;
   const steps = Math.max(10, Math.floor(cellSize / 2.2));
 
+  // DARK BASE KEEPS THE ARM READABLE; PALE FOAM ON TOP LIGHTENS IT
   const dabLayers = [
     {
       radius: Math.max(2, Math.round(cellSize * 0.1)),
-      color: "rgba(36 88 118 / 0.16)",
+      color: "rgba(36 88 118 / 0.18)",
     },
     {
       radius: Math.max(1, Math.round(cellSize * 0.065)),
-      color: "rgba(20 58 88 / 0.14)",
+      color: "rgba(200 228 242 / 0.26)",
     },
     {
       radius: 1,
-      color: "rgba(10 32 54 / 0.1)",
+      color: "rgba(236 248 255 / 0.22)",
     },
   ];
 

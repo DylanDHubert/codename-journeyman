@@ -1,4 +1,4 @@
-import { drawWhirlpoolSpiral, resolveWhirlpoolSpiralFrame } from "./waterFeatures";
+import { drawWhirlpoolSpiral } from "./waterFeatures";
 
 // EACH OBJECT DEFINITION MAPS TO ONE RENDERER (registry.render -> THIS TABLE).
 // RENDERERS DRAW INTO A CELL-SIZED BOX AT (originX, originY). PHASE ANIMATES.
@@ -17,8 +17,7 @@ export type ObjectRenderer = (args: ObjectRenderArgs) => void;
 export const ANIMATED_RENDERERS: ReadonlySet<string> = new Set(["whirlpool"]);
 
 function renderWhirlpool({ ctx, originX, originY, cellSize, phase }: ObjectRenderArgs): void {
-  // REUSES THE EXACT GAMEPLAY SPIRAL — DRAWN OVER PLAIN OCEAN NOW
-  drawWhirlpoolSpiral(ctx, originX, originY, cellSize, resolveWhirlpoolSpiralFrame(phase));
+  drawWhirlpoolSpiral(ctx, originX, originY, cellSize, phase);
 }
 
 function renderLighthouse({ ctx, originX, originY, cellSize }: ObjectRenderArgs): void {

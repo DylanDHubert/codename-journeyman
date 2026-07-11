@@ -17,6 +17,7 @@ import { WaterCanvasOverlay } from "@/components/game/WaterCanvasOverlay";
 import type { Level } from "@/lib/game/level/types";
 import type { CellCoord } from "@/lib/game/types";
 import { createAppearanceContext } from "@/lib/rendering/cellAppearance";
+import { DEFAULT_DISPLAY_PREFS } from "@/lib/rendering/displayPrefs";
 import { terrainGridGap } from "@/lib/rendering/terrainBorders";
 import { terrainViewFromLevel } from "@/lib/rendering/terrainView";
 
@@ -30,6 +31,10 @@ type GameBoardProps = {
   editable?: boolean;
   sizing?: "play" | "contain";
   draftRoute?: DraftRoute | null;
+  /** WHITE CELL OUTLINE OPACITY — 0 HIDES THE GRID */
+  cellGridOpacity?: number;
+  /** BLEND WATER DEPTH ACROSS NEIGHBOR CELLS — 0 = CHUNKY, 1 = FULL */
+  waterDepthInterpolation?: number;
   onToggleBridge?: (row: number, col: number) => void;
   onCellClick?: (row: number, col: number) => void;
 };
@@ -100,6 +105,8 @@ export function GameBoard({
   editable = false,
   sizing = "play",
   draftRoute,
+  cellGridOpacity = DEFAULT_DISPLAY_PREFS.cellGridOpacity,
+  waterDepthInterpolation = DEFAULT_DISPLAY_PREFS.waterDepthInterpolation,
   onToggleBridge,
   onCellClick,
 }: GameBoardProps) {
@@ -194,11 +201,23 @@ export function GameBoard({
             gap: gridGap,
           }}
         >
-          <WaterCanvasOverlay view={view} context={context} cellSize={cellSize} gap={gridGap} />
+          <WaterCanvasOverlay
+            view={view}
+            context={context}
+            cellSize={cellSize}
+            gap={gridGap}
+            depthInterpolation={waterDepthInterpolation}
+          />
           <BeachCanvasOverlay view={view} context={context} cellSize={cellSize} gap={gridGap} />
           <GrassCanvasOverlay view={view} context={context} cellSize={cellSize} gap={gridGap} />
           <CliffCanvasOverlay view={view} context={context} cellSize={cellSize} gap={gridGap} />
-          <TerrainBorderOverlay view={view} context={context} cellSize={cellSize} gap={gridGap} />
+          <TerrainBorderOverlay
+            view={view}
+            context={context}
+            cellSize={cellSize}
+            gap={gridGap}
+            cellGridOpacity={cellGridOpacity}
+          />
           <BridgeCanvasOverlay view={view} context={context} cellSize={cellSize} gap={gridGap} />
           {level.objects.length > 0 ? (
             <ObjectCanvasOverlay

@@ -4,8 +4,8 @@ import { useEffect, useRef, useState } from "react";
 
 import {
   isAnimatedWaterTile,
-  oceanWaterRgbForCell,
-  waterBaseForCell,
+  oceanWaterRgbForSubcell,
+  waterBaseForSubcell,
   type AppearanceContext,
 } from "@/lib/rendering/cellAppearance";
 import type { TileKind } from "@/lib/game/types";
@@ -17,6 +17,7 @@ import {
   WATER_SUBCELLS,
   type WaterNoiseField,
 } from "@/lib/rendering/waterNoise";
+import { DEFAULT_DISPLAY_PREFS } from "@/lib/rendering/displayPrefs";
 import {
   terrainSubcellRect,
   terrainSubcellSize,
@@ -30,6 +31,7 @@ type WaterCanvasOverlayProps = {
   cellSize: number;
   gap: number;
   frameMs?: number;
+  depthInterpolation?: number;
 };
 
 const DEFAULT_FRAME_MS = 420;
@@ -59,9 +61,17 @@ function paintWaterBlock(
   col: number,
   subRow: number,
   subCol: number,
+  depthInterpolation: number,
   transitionEdge?: TransitionEdge,
 ): void {
-  const base = waterBaseForCell(row, col, context);
+  const base = waterBaseForSubcell(
+    row,
+    col,
+    subRow,
+    subCol,
+    context,
+    depthInterpolation,
+  );
   if (!base) {
     return;
   }
@@ -75,7 +85,14 @@ function paintWaterBlock(
   let paintKind: TileKind = base.kind;
 
   if (softenTransition) {
-    paintRgb = oceanWaterRgbForCell(row, col, context);
+    paintRgb = oceanWaterRgbForSubcell(
+      row,
+      col,
+      subRow,
+      subCol,
+      context,
+      depthInterpolation,
+    );
     paintKind = "ocean";
   }
 
@@ -122,6 +139,7 @@ function drawWaterGapRegion(
   cellSize: number,
   stride: number,
   blockSize: number,
+  depthInterpolation: number,
 ): void {
   const startX = Math.round(x);
   const startY = Math.round(y);
@@ -160,6 +178,7 @@ function drawWaterGapRegion(
         sourceCol,
         sampleSubRow,
         sampleSubCol,
+        depthInterpolation,
         { edgeSubRow, edgeSubCol },
       );
     }
@@ -174,6 +193,7 @@ function drawWaterGaps(
   waterPhase: number,
   cellSize: number,
   gap: number,
+  depthInterpolation: number,
 ): void {
   const { rows, cols } = view;
   const stride = cellSize + gap;
@@ -205,6 +225,7 @@ function drawWaterGaps(
         cellSize,
         stride,
         blockSize,
+        depthInterpolation,
       );
     }
   }
@@ -235,6 +256,7 @@ function drawWaterGaps(
         cellSize,
         stride,
         blockSize,
+        depthInterpolation,
       );
     }
   }
@@ -271,6 +293,7 @@ function drawWaterGaps(
         cellSize,
         stride,
         blockSize,
+        depthInterpolation,
       );
     }
   }
@@ -284,6 +307,7 @@ export function drawWaterSurface(
   waterPhase: number,
   cellSize: number,
   gap: number,
+  depthInterpolation = DEFAULT_DISPLAY_PREFS.waterDepthInterpolation,
 ): void {
   const { rows, cols } = view;
   const subcells = WATER_SUBCELLS;
@@ -298,7 +322,14 @@ export function drawWaterSurface(
         continue;
       }
 
-      const base = waterBaseForCell(row, col, context);
+      const base = waterBaseForSubcell(
+        row,
+        col,
+        Math.floor(subcells / 2),
+        Math.floor(subcells / 2),
+        context,
+        depthInterpolation,
+      );
       if (!base) {
         continue;
       }
@@ -330,6 +361,7 @@ export function drawWaterSurface(
             col,
             subRow,
             subCol,
+            depthInterpolation,
           );
         }
       }
@@ -344,6 +376,7 @@ export function drawWaterSurface(
     waterPhase,
     cellSize,
     gap,
+    depthInterpolation,
   );
 }
 
@@ -353,6 +386,7 @@ export function WaterCanvasOverlay({
   cellSize,
   gap,
   frameMs = DEFAULT_FRAME_MS,
+  depthInterpolation = DEFAULT_DISPLAY_PREFS.waterDepthInterpolation,
 }: WaterCanvasOverlayProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [waterPhase, setWaterPhase] = useState(0);
@@ -387,8 +421,9 @@ export function WaterCanvasOverlay({
       waterPhase,
       cellSize,
       gap,
+      depthInterpolation,
     );
-  }, [view, context, waterPhase, cellSize, gap]);
+  }, [view, context, waterPhase, cellSize, gap, depthInterpolation]);
 
   return (
     <canvas
