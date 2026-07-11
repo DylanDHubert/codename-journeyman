@@ -1,15 +1,19 @@
 import { DIRECTIONS } from "./constants";
 import { inBounds } from "./coords";
 import { isInteriorGrass } from "./terrainFeatures";
-import { manhattanDistance } from "./tiles";
-import type { CellCoord, CourierRoute, TileKind } from "./types";
+import type { GenTileKind } from "./terrainFeatures";
+import { manhattanDistance } from "./rules";
+import type { CellCoord, Mission } from "./types";
 
 const MIN_COMPONENT_CELLS = 3;
 const ENDPOINT_TOP_FRACTION = 0.25;
 const ENDPOINT_DISTANCE_JITTER = 0.45;
 const MAX_CELLS_PER_COMPONENT = 6;
 
-type EndpointTriple = CourierRoute & {
+type EndpointTriple = {
+  x: CellCoord;
+  y: CellCoord;
+  z: CellCoord;
   spread: number;
 };
 
@@ -97,13 +101,13 @@ function tripleSpread(a: CellCoord, b: CellCoord, c: CellCoord): number {
 }
 
 /** PICK X, Y, Z ON THREE DIFFERENT ISLANDS — FAVOR FAR-APART TRIPLES */
-export function pickCourierEndpoints(
-  grid: TileKind[][],
+export function pickMissionEndpoints(
+  grid: GenTileKind[][],
   labels: number[][],
   rows: number,
   cols: number,
   rng: () => number,
-): CourierRoute | null {
+): Mission | null {
   const interiorByComponent = new Map<number, CellCoord[]>();
   const landByComponent = new Map<number, CellCoord[]>();
 
@@ -140,7 +144,6 @@ export function pickCourierEndpoints(
     if (interior && interior.length > 0) {
       return interior;
     }
-
     return landByComponent.get(componentId) ?? [];
   };
 
@@ -158,11 +161,11 @@ export function pickCourierEndpoints(
         const yCells = sampleEndpointCells(cellsForComponent(componentIds[j]!), rng);
         const zCells = sampleEndpointCells(cellsForComponent(componentIds[k]!), rng);
 
-        for (const start of xCells) {
-          for (const waypoint of yCells) {
-            for (const goal of zCells) {
-              const spread = tripleSpread(start, waypoint, goal);
-              const triple: EndpointTriple = { start, waypoint, goal, spread };
+        for (const x of xCells) {
+          for (const y of yCells) {
+            for (const z of zCells) {
+              const spread = tripleSpread(x, y, z);
+              const triple: EndpointTriple = { x, y, z, spread };
 
               if (candidates.length < poolCap) {
                 candidates.push(triple);
@@ -195,13 +198,9 @@ export function pickCourierEndpoints(
   );
   const picked = pickWeightedTriple(candidates.slice(0, poolSize), rng);
 
-  return {
-    start: picked.start,
-    waypoint: picked.waypoint,
-    goal: picked.goal,
-  };
+  return { x: picked.x, y: picked.y, z: picked.z };
 }
 
-export function endpointSpread(route: CourierRoute): number {
-  return tripleSpread(route.start, route.waypoint, route.goal);
+export function missionSpread(mission: Mission): number {
+  return tripleSpread(mission.x, mission.y, mission.z);
 }

@@ -4,25 +4,25 @@ import { useEffect, useRef } from "react";
 
 import type { AppearanceContext } from "@/lib/rendering/cellAppearance";
 import { drawTerrainBorders } from "@/lib/rendering/terrainBorders";
-import type { Puzzle } from "@/lib/game/types";
+import type { TerrainView } from "@/lib/rendering/terrainView";
 
 type TerrainBorderOverlayProps = {
-  puzzle: Puzzle;
+  view: TerrainView;
   context: AppearanceContext;
   cellSize: number;
   gap: number;
 };
 
 export function TerrainBorderOverlay({
-  puzzle,
+  view,
   context,
   cellSize,
   gap,
 }: TerrainBorderOverlayProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
-  const width = puzzle.cols * cellSize + Math.max(0, puzzle.cols - 1) * gap;
-  const height = puzzle.rows * cellSize + Math.max(0, puzzle.rows - 1) * gap;
+  const width = view.cols * cellSize + Math.max(0, view.cols - 1) * gap;
+  const height = view.rows * cellSize + Math.max(0, view.rows - 1) * gap;
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -35,8 +35,8 @@ export function TerrainBorderOverlay({
       return;
     }
 
-    drawTerrainBorders(ctx, puzzle, context, cellSize, gap);
-  }, [puzzle, context, cellSize, gap]);
+    drawTerrainBorders(ctx, view, context, cellSize, gap);
+  }, [view, context, cellSize, gap]);
 
   return (
     <canvas

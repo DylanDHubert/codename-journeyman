@@ -1,7 +1,7 @@
 import { createNoise2D } from "simplex-noise";
 
 import { hashStringToSeed, mulberry32 } from "@/lib/game/seed";
-import type { Puzzle } from "@/lib/game/types";
+import type { TerrainView } from "@/lib/rendering/terrainView";
 import { WATER_SUBCELLS } from "./waterNoise";
 
 const SPLOTCH_SCALE = 0.48;
@@ -38,9 +38,9 @@ function splotchStrength(value: number, threshold: number, softness: number): nu
   return Math.min(1, (value - threshold) / softness);
 }
 
-export function buildMarshSplotchField(puzzle: Puzzle): MarshSplotchField {
+export function buildMarshSplotchField(view: TerrainView): MarshSplotchField {
   const noise2D = createNoise2D(
-    mulberry32(hashStringToSeed(`${puzzle.seed}-marsh-splotch`)),
+    mulberry32(hashStringToSeed(`${view.seed}-marsh-splotch`)),
   );
 
   return {

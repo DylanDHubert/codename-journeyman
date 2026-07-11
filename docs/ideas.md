@@ -1,77 +1,95 @@
-# Dove — First Features (Oliver)
+# Dove — Level-first architecture (Oliver)
 
-Actionable workflow for the first helper-dev slice. Long-term brainstorm lives in [`expansion-ideas.md`](./expansion-ideas.md).
+Actionable workflow after the **campsite refactor**. Long-term brainstorm lives in [`expansion-ideas.md`](./expansion-ideas.md).
 
-**Constraints for this slice**
+**What shipped in this slice**
 
-- Do **not** edit the solution-finding / PAR search algorithm (`src/lib/game/simulation.ts`, `computeMinimumSolution`, `computeMinimumCost`, etc.). Call it; wrap it; validate with it.
-- Assets are optional for animals — placeholders must work.
-- PC-first sizing is OK even if PAR validation gets slower on huge grids.
+- **`Level`** is the only map model (create, save, future play).
+- Random terrain on `/create` → editor → save to `public/levels/` as **LevelFile v2**.
+- Shared **`GameBoard`** + **`TerrainView`** rendering for create and (future) play.
+- **Mission** checkpoints X / Y / Z auto-picked at create; serialized on the level.
+- PAR solver, `Puzzle` types, and procedural `/play` gen are **removed**.
+
+**Constraints**
+
+- Do **not** reintroduce PAR / optimal-path search. Win = mission reachable (`simulateLevel.ts`).
+- Assets optional for animals — placeholders must work when that slice returns.
+- PC-first sizing is OK.
 
 ---
 
-## Overview (suggested order)
+## Canonical model
+
+```
+Level
+├── terrain[]     row-major TileKind (ocean, marsh, beach, grass, cliff)
+├── objects[]     buildings (whirlpool, lighthouse, port) — see content/objects/
+├── routes[]      player-drawn paths (pirate, merchant) — see content/routes/
+└── mission       { x, y, z } land checkpoints
+```
+
+| Concern | Location |
+|---------|----------|
+| Types | `src/lib/game/level/types.ts`, `src/lib/game/types.ts` |
+| Save/load | `src/lib/game/level/serialize.ts` |
+| Create entry gen | `src/lib/game/level/generateLevel.ts` |
+| Rules (bridge, cost, traverse) | `src/lib/game/rules.ts` |
+| Play simulation (stub API) | `src/lib/game/simulateLevel.ts` |
+| Board UI | `src/components/game/GameBoard.tsx` |
+| Mission overlay | `src/components/game/MissionMarkerOverlay.tsx` |
+| Effect stubs | `src/lib/game/objects/effectHandlers.ts` |
+
+**Win rule (when play exists):** all three mission checkpoints must lie in one walkable connected component. **Order does not matter.** Display path X → Y → Z is UX only.
+
+**Whirlpool:** not terrain. Noise gen places whirlpool **objects** on water cells (`gridToLevel.ts`).
+
+---
+
+## Overview (suggested order for Oliver)
 
 | # | Feature | Primary output |
 |---|---------|----------------|
-| 1 | **Drag to place bridges** | Pointer drag across water cells (not click-only) |
-| 2 | Level JSON format + validator script | `public/levels/*.json`, `scripts/validateLevels.ts` |
-| 3 | Load levels in app | `?level=id` or route, skip procedural gen |
-| 4 | PC sizing | Bigger grids + larger board on desktop |
-| 5 | Animal catalog (100) | `public/data/animals.json` |
-| 6 | Animal spawn (no assets) | Runtime + optional `scripts/` helper |
-| 7 | Animals collection page | `/animals` with placeholders + pagination |
+| 1 | **Drag to place bridges** | Board-level pointer stroke on `GameBoard` |
+| 2 | Level validator script | `scripts/validateLevels.ts`, CI hook |
+| 3 | **Play mode** — load saved levels | `src/app/play/`, `useLevelGame` hook |
+| 4 | PC sizing | Larger grids + board on desktop |
+| 5 | Custom effect handlers | `effectHandlers.ts` (lighthouse, port) |
+| 6 | Animal catalog (100) | `public/data/animals.json` — **deferred** |
+| 7 | Animals collection page | `/animals` — **deferred** |
 
 ---
 
 ## 1. Drag to place bridges
 
-**First thing to implement.** Today bridges toggle one cell at a time on click (`CellView` → `onToggle` → `toggleBridge` in `useBridgeGame`). Add drag so players can paint a run of bridges in one gesture.
-
-### Current behavior
-
-- Each water cell is a `<button>` with `onClick` in `src/components/game/CellView.tsx`.
-- `toggleBridge(row, col)` in `src/hooks/useBridgeGame.ts` flips bridge on/off per cell (respects `canPlaceBridge`).
+**First gameplay input ticket.** Today the editor toggles bridges per cell on click (`CellView` → `onToggle`).
 
 ### Desired behavior
 
-- **Pointer down** on a bridgeable water cell starts a drag session.
-- **Pointer move** over other cells while held applies the same action (place or remove) to each cell entered along the path.
+- **Pointer down** on bridgeable water starts a drag session.
+- **Pointer move** paints place or remove along the path.
 - **Pointer up** ends the session.
-- **Click without meaningful drag** should still work as today (single-cell toggle).
+- **Click without drag** still toggles one cell.
 
-### Interaction rules (suggested)
+### Rules
 
-- Only **bridgeable water** cells (`ocean`, `marsh`) receive drag paint — skip land tiles while dragging over them (do not toggle).
-- **Lock mode on pointer down**: if the first cell had no bridge → drag **places**; if it had a bridge → drag **removes**. Do not alternate per cell mid-stroke.
-- **No duplicate toggles** on the same cell during one drag (track visited cells in the stroke).
-- Respect existing validation: `canPlaceBridge` / phase checks — silently skip illegal cells rather than erroring.
-- **Touch**: use pointer events (`pointerdown` / `pointermove` / `pointerup`) so mouse and touch share one path; `setPointerCapture` on the board container helps when dragging fast.
+- Only bridgeable water (`ocean`, `marsh`) — skip land while dragging.
+- **Lock mode on pointer down:** empty cell → place; bridged cell → remove.
+- Track visited cells per stroke (no double-toggle).
+- Respect `canPlaceBridgeAt` from `rules.ts` — skip illegal cells silently.
+- Use pointer events + `setPointerCapture` on the board container.
 
 ### Where to implement
 
-- Prefer a **board-level** handler on `GameBoard` (or a thin wrapper) that hit-tests grid coordinates from pointer position, rather than per-cell `mouseenter` on dozens of buttons.
-- Keep `toggleBridge` / placement logic in `useBridgeGame`; drag layer only computes `(row, col)` sequence and calls place/remove API.
-- Consider `user-select: none` and `touch-action: none` on the board while dragging to avoid scroll/zoom fights on trackpad/touch.
-
-### Edge cases
-
-- Drag off the board → end stroke, no further paints.
-- Submit / success phase → disable drag like clicks.
-- Marsh vs ocean cost unchanged — drag is just input, not rules.
+- Board-level hit-test on `GameBoard` (or wrapper).
+- New hook e.g. `src/hooks/useLevelGame.ts` — holds `bridges: Set<string>`, calls `canPlaceBridgeAt` / `simulateLevel` on submit.
+- `user-select: none`, `touch-action: none` while dragging.
 
 ### Done when
 
-- [ ] Drag across a line of water places bridges on all cells in one gesture
-- [ ] Drag across existing bridges removes them
-- [ ] Single click still toggles one cell
-- [ ] Land cells in the path do not break the stroke or toggle incorrectly
-
-### Testing checklist (drag)
-
-- [ ] Drag works with mouse and touch
-- [ ] Fast drag does not skip cells (pointer capture)
-- [ ] No double-toggle when click + tiny movement
+- [ ] Drag paints a run of bridges in one gesture
+- [ ] Drag removes existing bridges
+- [ ] Single click still works
+- [ ] Land cells in path do not break the stroke
 
 ---
 
@@ -82,309 +100,191 @@ Actionable workflow for the first helper-dev slice. Long-term brainstorm lives i
 ```
 public/
   levels/
-    manifest.json      # optional index: id, name, file, tags
-    level-001.json
-    level-002.json
-    ...
+    manifest.json      # optional index
+    my-level.json
 ```
 
-Commit level JSON to git like any other static asset. App loads via `fetch('/levels/level-001.json')`.
+### Format — LevelFile v2
 
-### Format (JSON)
-
-Store **`PuzzleGrid`** shape from `src/lib/game/types.ts` — **not** full `Puzzle` with `parCost`. PAR is computed at validate/load time.
+See `src/lib/game/level/types.ts`. Terrain is a **single encoded string** (one char per cell).
 
 ```json
 {
-  "id": "level-001",
-  "name": "First crossing",
-  "version": 1,
-  "seed": "level-001",
-  "rows": 12,
-  "cols": 10,
-  "start": { "row": 0, "col": 1 },
-  "waypoint": { "row": 5, "col": 8 },
-  "goal": { "row": 11, "col": 4 },
-  "cells": [
-    { "kind": "grass", "role": "start", "componentId": 0 },
-    { "kind": "ocean", "role": "none", "componentId": -1 }
-  ]
+  "version": 2,
+  "id": "harbor-crossing",
+  "name": "Harbor crossing",
+  "seed": "harbor-crossing",
+  "grid": { "rows": 12, "cols": 10 },
+  "terrain": "ooooggoooo...",
+  "mission": {
+    "x": [2, 1],
+    "y": [5, 8],
+    "z": [11, 4]
+  },
+  "objects": [
+    { "defId": "whirlpool", "row": 3, "col": 5 }
+  ],
+  "routes": [
+    {
+      "id": "route-1",
+      "defId": "pirate",
+      "closed": true,
+      "path": [[1, 2], [1, 3], [2, 3]]
+    }
+  ],
+  "meta": { "author": "dylan", "createdAt": "2026-07-08T..." }
 }
 ```
+
+**Terrain codes:** `o` ocean, `m` marsh, `b` beach, `g` grass, `c` cliff.
 
 **Rules**
 
-- `cells.length === rows * cols`, row-major (`index = row * cols + col`).
-- `kind`: `grass` | `beach` | `cliff` | `ocean` | `marsh` | `whirlpool`.
-- `role`: `none` | `start` | `waypoint` | `goal` — exactly one of each route role.
-- `componentId`: land component index from labeling, or `-1` for water (see `toPuzzleCells` in `terrainFeatures.ts` for reference when authoring by hand).
-- Optional metadata: `author`, `theme`, `notes` (ignored by loader).
+- `terrain.length === rows * cols`.
+- `mission.x`, `.y`, `.z` are `[row, col]` on **walkable land** (grass/beach/cliff per rules).
+- `objects[].defId` must exist in `objectCatalog`.
+- `routes[].defId` must exist in `routeCatalog`.
+- At most one object per cell.
 
-### Validate solution exists (do not change PAR algo)
+### Validator (not built yet)
 
-Add **`scripts/validateLevels.ts`** (standalone, like `scripts/benchmarkPar.ts`):
+Add **`scripts/validateLevels.ts`**:
 
-1. Glob/read every `public/levels/*.json` (skip `manifest.json`).
-2. Parse + schema-check (rows/cols/cells/roles).
-3. Build `PuzzleGrid`, then call existing API:
+1. Read every `public/levels/*.json` (skip `manifest.json`).
+2. `deserializeLevel` + schema checks.
+3. Optional: verify mission coords in bounds and on land.
+4. Optional: verify object placement against `rules.ts` / catalog placement rules.
+5. npm script: `"validate:levels": "npx --yes tsx scripts/validateLevels.ts"`
 
-```ts
-import { computeMinimumCost, buildParContext } from "../src/lib/game/par";
+**No PAR check.** Levels are author-driven; solvability is a design concern, not an algorithmic gate.
 
-const parCost = computeMinimumCost(puzzleGrid, maxPar + 1, {
-  maxStatesPerLayer: 48, // match generation.ts defaults unless bench says otherwise
-});
-```
+### Loader (runtime — stub)
 
-4. **Fail** level if:
-   - `parCost === null` (no solution within budget)
-   - roles missing / duplicate
-   - dimensions mismatch
-5. Print per-level: `id`, `parCost`, bridge slot count, timing (optional).
-6. npm script: `"validate:levels": "npx --yes tsx scripts/validateLevels.ts"`
-
-Use this in CI or pre-commit before merging new levels.
-
-### Loader (runtime)
-
-New module e.g. `src/lib/game/levelLoader.ts`:
-
-- `loadLevelFromUrl(path: string): Promise<Puzzle>`
-- `fetch` JSON → validate shape → `computeMinimumCost` → return `{ ...grid, parCost }`
-- If PAR fails at runtime, throw clear error (level should never ship without passing script).
-
-Wire into game bootstrap:
-
-- Today: `useBridgeGame` → `generatePuzzleAction` (server) with `GenerationConfig`.
-- Add: `?level=level-001` on home page **or** `src/app/play/[levelId]/page.tsx`.
-- When `level` param set: skip generation; `fetch('/levels/${id}.json')` + attach `parCost`.
-- Reuse `emptyGameState(puzzle)` path already used for `initialPuzzle`.
-
-**Reference files**
-
-- Types: `src/lib/game/types.ts` (`PuzzleGrid`, `Puzzle`, `PuzzleCell`)
-- PAR (read-only): `src/lib/game/par.ts` → `simulation.ts`
-- Generation PAR call pattern: `src/lib/game/generation.ts` (~lines 167–195)
-- Bench reference: `scripts/benchmarkPar.ts` (`buildPuzzleFromRawGrid` + `computeMinimumCost`)
-
-### Authoring levels (later tooling)
-
-Not required for v1 — hand-edit JSON or export from an internal editor. Optional follow-up: small script to convert noise-generated puzzle dump to level JSON.
-
----
-
-## 3. PC-focused maximum size
-
-### Grid limits
-
-Current caps in `src/lib/game/generationConfig.ts`:
+`src/app/play/page.tsx` is a stub. Implement:
 
 ```ts
-export const GRID_LIMITS = {
-  rows: { min: 8, max: 22 },
-  cols: { min: 6, max: 16 },
-};
+import { deserializeLevel } from "@/lib/game/level/serialize";
+
+const file = await fetch(`/levels/${id}.json`).then((r) => r.json());
+const level = deserializeLevel(file);
+// pass to GameBoard + useLevelGame
 ```
 
-**Raise for PC** (tune after `npm run bench:par -- --mode sizes`):
-
-- Suggested starting target: `rows` max **32–40**, `cols` max **24–28**.
-- Procedural gen may get slow — that's acceptable; authored levels can be larger if validator passes.
-- Update `clampGrid`, `GeneratorPanel` UI, and any preset docs.
-
-### Board / cell sizing
-
-Current mobile bias in `src/components/game/GameBoard.tsx`:
-
-- `MAX_CELL = 44`, `MIN_CELL = 24`
-- `heightBudget = min(viewportHeight * 0.58, 640)`
-- `max-w-md` on board container
-
-**PC changes**
-
-- Increase `MAX_CELL` (e.g. **56–64**) on large breakpoints.
-- Use more viewport height (e.g. `0.85` of window, higher cap than `640`).
-- Widen layout: drop or relax `max-w-md` at `lg`/`xl`.
-- Optional: fixed cell size on desktop when grid is small; scale down only when necessary.
-
-### PAR performance note
-
-Larger grids = slower validation. Mitigations **without** touching search algo:
-
-- Run full PAR only in `validateLevels.ts` / server action at load time.
-- Show loading state while level PAR computes (same as generation spinner).
-- Use `benchmarkPar.ts` to document acceptable size/time before raising limits.
+Wire `?level=id` or `/play/[levelId]`.
 
 ---
 
-## 4. Animals — catalog (100 total)
+## 3. Play mode
 
-### Data file
+**Stub:** `src/app/play/page.tsx` → see `src/app/play/README.md`.
 
-`public/data/animals.json`:
+Hook points:
 
-```json
-{
-  "version": 1,
-  "animals": [
-    {
-      "id": "heron-01",
-      "name": "Grey heron",
-      "rarity": "common",
-      "islandKinds": ["grass", "beach"],
-      "theme": 0,
-      "placeholder": { "hue": 210, "emoji": "🐦" }
-    }
-  ]
-}
-```
+| Step | Module |
+|------|--------|
+| Load JSON | `deserializeLevel` |
+| Render | `GameBoard` with `level` prop |
+| Bridge state | `useLevelGame` (to write) |
+| Submit / win | `simulateLevel(level, bridges)` |
+| Path preview | `displayMissionPath` (X→Y→Z display only) |
 
-**Fields**
-
-| Field | Notes |
-|-------|--------|
-| `id` | Stable key for save data |
-| `name` | Display name |
-| `rarity` | `common` \| `uncommon` \| `rare` \| `legendary` (or similar) |
-| `islandKinds` | Which **land** tiles count as this animal's habitat (`grass`, `beach`, `cliff`) — island-based, not water |
-| `theme` | 0–6 for future 7-world graphical sets |
-| `placeholder` | Color/emoji/initials until sprite exists |
-| `sprite` | Optional path `assets/sprites/animals/heron-01.png` — omit for now |
-
-**100 animals** in catalog upfront. Distribution can be weighted by rarity; not all need to be spawnable in every puzzle.
-
-### Island / tile rules
-
-- Spawn only on **land** cells that are part of an island (`componentId >= 0`).
-- Filter catalog by cell `kind` ∈ `animal.islandKinds`.
-- One animal per island component per run (or per level) unless design says otherwise — start simple: **at most one spawn per land component**.
-- No gameplay effect on PAR — collection only.
+`SimulationResult.connected === true` → success phase.
 
 ---
 
-## 5. Animal spawn (randomized, not in level JSON)
+## 4. PC-focused maximum size
 
-Spawns are **derived from seed + puzzle**, not authored in level files.
+Grid limits live in `src/lib/game/createConfig.ts` / `generationConfig.ts` (create flow).
 
-### Runtime
+Board sizing: `src/components/game/GameBoard.tsx` — raise `MAX_CELL`, viewport budget, relax `max-w-md` at `lg`.
 
-`src/lib/game/animalSpawns.ts` (suggested):
-
-```ts
-type AnimalSpawn = {
-  animalId: string;
-  row: number;
-  col: number;
-  componentId: number;
-};
-
-function rollAnimalSpawns(puzzle: Puzzle, catalog: AnimalCatalog, seed: string): AnimalSpawn[]
-```
-
-- Deterministic RNG from `hashStringToSeed(\`${seed}-animals\`)` (see `src/lib/game/seed.ts`).
-- For each land component: roll whether spawn appears (probability by rarity).
-- Pick random eligible cell on that component matching `islandKinds`.
-- Render: small placeholder on `CellView` or overlay (emoji/tinted circle) — **no sprite required**.
-
-### Standalone script (optional)
-
-`scripts/previewAnimalSpawns.ts`:
-
-```
-npx tsx scripts/previewAnimalSpawns.ts --seed daily --level level-001
-```
-
-Prints spawn table for debugging/content balance. Can share RNG logic with runtime module.
+No PAR benchmark anymore (`scripts/benchmarkPar.ts` removed with PAR). Tune grid size by feel and render perf.
 
 ---
 
-## 6. Animals collection page
+## 5. Custom effects (stub)
 
-### Route
+JSON objects/routes declare `effects`. Declarative effects resolve in `objects/effects.ts`. **Custom** ids dispatch to `effectHandlers.ts`:
 
-`src/app/animals/page.tsx` (+ optional `animals/[page]/page.tsx` or query `?p=2`).
+| Handler id | Status | Intended behavior |
+|------------|--------|-------------------|
+| `lighthouseLight` | stub | fog / vision (TBD) |
+| `port` | stub | merchant anchor / trade (TBD) |
 
-### UX (no assets)
-
-- **100 entries** from catalog.
-- **Pagination** — e.g. 10 per page → 10 pages (or 20 × 5).
-- **Found vs locked**: read `localStorage` key e.g. `bridge-isles-animals-found` → `Set<string>` of `animalId`.
-- Found: show placeholder card (emoji, name, rarity, island kinds).
-- Locked: silhouette / "?" card — still show rarity tier if desired.
-- On **successful puzzle submit**, if route touched a spawn tile, add `animalId` to found set.
-- **Polaroid popup** (later polish): on submit, if new animal — modal with placeholder frame. v1 can be inline toast.
-
-### Submit hook
-
-In `useBridgeGame` submit flow: compare `courierPath` / `runPath` against `rollAnimalSpawns(...)` for current puzzle; merge into localStorage.
+Register real handlers with `registerEffectHandler(id, fn)`.
 
 ---
 
-## 7. File checklist for Oliver
+## 6. Animals — deferred
+
+Not in `Level`. Runtime spawn from seed + level (future `animalSpawns.ts`). Collection page `/animals` unchanged from original brainstorm — revisit after play ships.
+
+---
+
+## 7. File checklist
 
 ```
 public/
-  levels/
-    manifest.json
-    level-001.json
-  data/
-    animals.json
+  levels/                    # saved LevelFile v2 JSON
 
 scripts/
-  validateLevels.ts
-  previewAnimalSpawns.ts   # optional
+  validateLevels.ts          # TO BUILD
 
 src/lib/game/
-  levelLoader.ts
-  animalCatalog.ts
-  animalSpawns.ts
+  level/                     # README — types, serialize, generateLevel
+  objects/                   # README — catalogs, effects, registry
+  rules.ts                   # single rules engine
+  simulateLevel.ts           # play win check (no PAR)
 
-src/app/
-  animals/page.tsx
-  play/[levelId]/page.tsx   # or ?level= on page.tsx
-
-src/components/game/
-  GameBoard.tsx             # pointer drag hit-test + stroke
-  CellView.tsx              # may simplify click-only or delegate to board
+src/content/
+  objects/*.json
+  routes/*.json
 
 src/hooks/
-  useBridgeGame.ts          # placeBridge / removeBridge or stroke API; level load branch
+  useLevelGame.ts            # TO BUILD — bridges + submit
+
+src/app/
+  play/                      # stub → full loader
+  create/view/               # editor + save
+
+src/components/game/
+  GameBoard.tsx
+  MissionMarkerOverlay.tsx
+  CellView.tsx
 ```
 
 ---
 
 ## 8. Testing checklist
 
-- [ ] Drag-to-bridge (see §1) works on desktop and touch
-- [ ] `npm run validate:levels` passes on all committed levels
-- [ ] `?level=level-001` loads board without calling `generatePuzzleAction`
-- [ ] PAR from file matches validator script for same JSON
-- [ ] Large grid (new limits) renders on 1920×1080 without clipping
-- [ ] Same seed → same animal spawns
-- [ ] Animals only on allowed `islandKinds`
-- [ ] `/animals` shows 100 slots; found state persists in localStorage
-- [ ] Submit with path through spawn marks animal found
+- [ ] `/create` → random level → editor shows X/Y/Z markers
+- [ ] Save produces valid LevelFile v2 under `public/levels/`
+- [ ] `deserializeLevel(serializeLevel(level))` round-trips
+- [ ] Drag-to-bridge (when built)
+- [ ] `npm run validate:levels` passes on committed levels (when built)
+- [ ] Play loads saved level without procedural gen
+- [ ] `simulateLevel` marks win when all checkpoints reachable
+- [ ] Large grid renders on desktop without clipping
 
 ---
 
-## 9. Out of scope for this slice
+## 9. Out of scope
 
-- Editing PAR / simulation search internals
-- Sprite production (placeholders only)
-- Merchant ships, pirates, caravans (see `expansion-ideas.md`)
-- Multiplayer / shared merchand ships
-- Underground cave levels
+- PAR / optimal bridge solver (removed)
+- Procedural play generation (removed)
+- Sprite production
+- Animals slice (deferred)
+- Multiplayer / shared merchant ships
 
 ---
 
-## Quick reference — existing entry points
+## Quick reference — module READMEs
 
-| Concern | Location |
-|---------|----------|
-| Puzzle types | `src/lib/game/types.ts` |
-| Procedural generation | `src/lib/game/generation.ts`, `generatePuzzleAction` |
-| Game hook | `src/hooks/useBridgeGame.ts` |
-| Board sizing | `src/components/game/GameBoard.tsx` |
-| Grid limits | `src/lib/game/generationConfig.ts` → `GRID_LIMITS` |
-| PAR benchmark | `npm run bench:par` → `scripts/benchmarkPar.ts` |
-| Optimal path display | `computeMinimumSolution` in `useBridgeGame.ts` |
+| Path | What it documents |
+|------|-------------------|
+| `src/lib/game/README.md` | Game module map |
+| `src/lib/game/level/README.md` | Level types, serialize, generation |
+| `src/lib/game/objects/README.md` | Catalogs, effects, registry |
+| `src/content/README.md` | JSON content authoring |
+| `src/lib/rendering/README.md` | TerrainView decoupling |
+| `src/app/play/README.md` | Play mode stub + wiring guide |

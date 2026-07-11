@@ -1,11 +1,13 @@
-import { componentColor } from "@/lib/game/generation";
 import {
   buildTerrainMaps,
   maxWaterDistance,
   waterDepthAt,
 } from "@/lib/game/terrain";
-import { bridgePlacementCost, isLandKind } from "@/lib/game/tiles";
-import type { Puzzle, TileKind } from "@/lib/game/types";
+import { bridgeCostAt, isLandKind } from "@/lib/game/rules";
+import type { TileKind } from "@/lib/game/types";
+import type { Level } from "@/lib/game/level/types";
+import type { TerrainView } from "@/lib/rendering/terrainView";
+import { terrainKindAt } from "@/lib/rendering/terrainView";
 import type { CellAppearance, OverlayKind } from "./types";
 import {
   buildBeachSandField,
@@ -88,12 +90,6 @@ function tileBaseRgb(
         MARSH_GREEN_PUSH,
         0.2,
       );
-    case "whirlpool":
-      return mixColorRgb(
-        oceanWaterRgb(Math.min(1, depth + 0.2)),
-        WHIRLPOOL_SHADE,
-        0.5,
-      );
     case "ocean":
     default:
       return oceanWaterRgb(depth);
@@ -109,20 +105,20 @@ function tileBaseColor(
 }
 
 function isAnimatedWaterKind(kind: TileKind): boolean {
-  return kind === "ocean" || kind === "marsh" || kind === "whirlpool";
+  return kind === "ocean" || kind === "marsh";
 }
 
 /** UNDERLYING TILE — INCLUDES BRIDGE CELLS FOR BACKGROUND PAINTING */
 export function isAnimatedWaterTile(
-  puzzle: Puzzle,
+  view: TerrainView,
   row: number,
   col: number,
 ): boolean {
-  if (row < 0 || col < 0 || row >= puzzle.rows || col >= puzzle.cols) {
+  if (row < 0 || col < 0 || row >= view.rows || col >= view.cols) {
     return false;
   }
 
-  return isAnimatedWaterKind(puzzle.cells[row * puzzle.cols + col]!.kind);
+  return isAnimatedWaterKind(terrainKindAt(view, row, col)!);
 }
 
 export function hasBridgeAt(
@@ -134,12 +130,12 @@ export function hasBridgeAt(
 }
 
 export function isWaterCell(
-  puzzle: Puzzle,
+  view: TerrainView,
   bridges: Set<string>,
   row: number,
   col: number,
 ): boolean {
-  if (row < 0 || col < 0 || row >= puzzle.rows || col >= puzzle.cols) {
+  if (row < 0 || col < 0 || row >= view.rows || col >= view.cols) {
     return false;
   }
 
@@ -147,7 +143,7 @@ export function isWaterCell(
     return false;
   }
 
-  return isAnimatedWaterKind(puzzle.cells[row * puzzle.cols + col]!.kind);
+  return isAnimatedWaterKind(terrainKindAt(view, row, col)!);
 }
 
 export function terrainSurfaceRgb(
@@ -155,18 +151,18 @@ export function terrainSurfaceRgb(
   col: number,
   context: AppearanceContext,
 ): { r: number; g: number; b: number } {
-  const { puzzle, bridges, terrainMaps, maxDepth } = context;
+  const { view, bridges, terrainMaps, maxDepth } = context;
   const key = `${row},${col}`;
 
   if (bridges.has(key)) {
     return BRIDGE_WOOD_RGB;
   }
 
-  const cell = puzzle.cells[row * puzzle.cols + col]!;
+  const kind = terrainKindAt(view, row, col)!;
   const distance = terrainMaps.distanceFromLand[row]![col]!;
   const depth = waterDepthAt(distance, maxDepth);
 
-  return tileBaseRgb(cell.kind, depth);
+  return tileBaseRgb(kind, depth);
 }
 
 export function oceanWaterRgbForCell(
@@ -186,10 +182,10 @@ export function waterBaseForCell(
   col: number,
   context: AppearanceContext,
 ): { rgb: { r: number; g: number; b: number }; kind: TileKind } | null {
-  const { puzzle, terrainMaps, maxDepth } = context;
-  const cell = puzzle.cells[row * puzzle.cols + col]!;
+  const { view, terrainMaps, maxDepth } = context;
+  const kind = terrainKindAt(view, row, col)!;
 
-  if (!isAnimatedWaterKind(cell.kind)) {
+  if (!isAnimatedWaterKind(kind)) {
     return null;
   }
 
@@ -197,8 +193,8 @@ export function waterBaseForCell(
   const depth = waterDepthAt(distance, maxDepth);
 
   return {
-    rgb: tileBaseRgb(cell.kind, depth),
-    kind: cell.kind,
+    rgb: tileBaseRgb(kind, depth),
+    kind,
   };
 }
 
@@ -207,9 +203,9 @@ export function beachBaseForCell(
   col: number,
   context: AppearanceContext,
 ): { rgb: { r: number; g: number; b: number } } | null {
-  const cell = context.puzzle.cells[row * context.puzzle.cols + col]!;
+  const kind = terrainKindAt(context.view, row, col);
 
-  if (cell.kind !== "beach") {
+  if (kind !== "beach") {
     return null;
   }
 
@@ -223,9 +219,9 @@ export function grassBaseForCell(
   col: number,
   context: AppearanceContext,
 ): { rgb: { r: number; g: number; b: number } } | null {
-  const cell = context.puzzle.cells[row * context.puzzle.cols + col]!;
+  const kind = terrainKindAt(context.view, row, col);
 
-  if (cell.kind !== "grass") {
+  if (kind !== "grass") {
     return null;
   }
 
@@ -239,9 +235,9 @@ export function cliffBaseForCell(
   col: number,
   context: AppearanceContext,
 ): { rgb: { r: number; g: number; b: number } } | null {
-  const cell = context.puzzle.cells[row * context.puzzle.cols + col]!;
+  const kind = terrainKindAt(context.view, row, col);
 
-  if (cell.kind !== "cliff") {
+  if (kind !== "cliff") {
     return null;
   }
 
@@ -251,7 +247,9 @@ export function cliffBaseForCell(
 }
 
 export type AppearanceContext = {
-  puzzle: Puzzle;
+  view: TerrainView;
+  /** WHEN SET (PLAY MODE), BRIDGE COST LABELS USE RULES ENGINE */
+  level?: Level;
   bridges: Set<string>;
   pathKeys: Set<string>;
   showComponents: boolean;
@@ -266,22 +264,24 @@ export type AppearanceContext = {
 };
 
 export function createAppearanceContext(
-  puzzle: Puzzle,
+  view: TerrainView,
   bridges: Set<string>,
   pathKeys: Set<string>,
   showComponents: boolean,
+  level?: Level,
 ): AppearanceContext {
-  const terrainMaps = buildTerrainMaps(puzzle);
+  const terrainMaps = buildTerrainMaps(view);
   const maxDepth = maxWaterDistance(terrainMaps);
-  const waterNoise = buildWaterNoiseField(puzzle);
-  const marshSplotch = buildMarshSplotchField(puzzle);
-  const beachSand = buildBeachSandField(puzzle);
-  const grassTerrain = buildGrassTerrainField(puzzle);
-  const cliffRock = buildCliffRockField(puzzle);
-  const bridgeWood = buildBridgeWoodField(puzzle);
+  const waterNoise = buildWaterNoiseField(view);
+  const marshSplotch = buildMarshSplotchField(view);
+  const beachSand = buildBeachSandField(view);
+  const grassTerrain = buildGrassTerrainField(view);
+  const cliffRock = buildCliffRockField(view);
+  const bridgeWood = buildBridgeWoodField(view);
 
   return {
-    puzzle,
+    view,
+    level,
     bridges,
     pathKeys,
     showComponents,
@@ -302,29 +302,15 @@ export function appearanceForCell(
   context: AppearanceContext,
   overlayOverride?: OverlayKind,
 ): CellAppearance {
-  const {
-    puzzle,
-    bridges,
-    pathKeys,
-    showComponents,
-    terrainMaps,
-    maxDepth,
-  } = context;
-  const index = row * puzzle.cols + col;
-  const cell = puzzle.cells[index]!;
+  const { view, level, bridges, pathKeys, terrainMaps, maxDepth } = context;
+  const kind = terrainKindAt(view, row, col)!;
   const key = `${row},${col}`;
   const hasBridge = bridges.has(key);
   const onPath = pathKeys.has(key);
 
   let overlay: OverlayKind = overlayOverride ?? "none";
   if (overlay === "none") {
-    if (cell.role === "start") {
-      overlay = "start";
-    } else if (cell.role === "waypoint") {
-      overlay = "waypoint";
-    } else if (cell.role === "goal") {
-      overlay = "goal";
-    } else if (hasBridge) {
+    if (hasBridge) {
       overlay = "bridge";
     } else if (onPath) {
       overlay = "path";
@@ -333,49 +319,33 @@ export function appearanceForCell(
 
   let backgroundColor = "transparent";
 
-  if (hasBridge) {
-    // DRAWN BY BridgeCanvasOverlay — KEEP CELL TRANSPARENT FOR OVERLAYS
-    backgroundColor = "transparent";
-  } else {
+  if (!hasBridge) {
     const distance = terrainMaps.distanceFromLand[row]![col]!;
     const depth = waterDepthAt(distance, maxDepth);
 
-    if (isAnimatedWaterKind(cell.kind)) {
-      // DRAWN BY WaterCanvasOverlay — KEEP CELL TRANSPARENT FOR SHIMMER/OVERLAYS
-      backgroundColor = "transparent";
-    } else if (cell.kind === "beach") {
-      // DRAWN BY BeachCanvasOverlay
-      backgroundColor = "transparent";
-    } else if (cell.kind === "grass") {
-      // DRAWN BY GrassCanvasOverlay
-      backgroundColor = "transparent";
-    } else if (cell.kind === "cliff") {
-      // DRAWN BY CliffCanvasOverlay
+    if (
+      isAnimatedWaterKind(kind) ||
+      kind === "beach" ||
+      kind === "grass" ||
+      kind === "cliff"
+    ) {
       backgroundColor = "transparent";
     } else {
-      backgroundColor = tileBaseColor(cell.kind, depth);
+      backgroundColor = tileBaseColor(kind, depth);
     }
   }
 
-  const componentTint =
-    showComponents && isLandKind(cell.kind) && cell.componentId >= 0
-      ? `${componentColor(cell.componentId)}33`
-      : undefined;
-
-  let shimmer: string | undefined;
-
   const bridgeCostLabel =
-    !hasBridge && (cell.kind === "marsh" || cell.kind === "ocean")
-      ? bridgePlacementCost(puzzle, row, col)
+    level && !hasBridge && (kind === "marsh" || kind === "ocean")
+      ? bridgeCostAt(level, row, col)
       : undefined;
 
   return {
     backgroundColor,
-    shimmer,
+    shimmer: undefined,
     overlay,
-    componentTint,
+    componentTint: undefined,
     bridgeCostLabel,
-    // FUTURE: MAP kind + DEPTH TO SPRITE FRAMES
   };
 }
 

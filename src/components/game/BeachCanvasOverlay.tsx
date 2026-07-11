@@ -9,28 +9,28 @@ import {
   type BeachSandField,
 } from "@/lib/rendering/beachSand";
 import { terrainSubcellRect, terrainSubcellSize } from "@/lib/rendering/terrainBorders";
-import type { Puzzle } from "@/lib/game/types";
+import type { TerrainView } from "@/lib/rendering/terrainView";
 
 type BeachCanvasOverlayProps = {
-  puzzle: Puzzle;
+  view: TerrainView;
   context: AppearanceContext;
   cellSize: number;
   gap: number;
 };
 
-function isBeachCell(puzzle: Puzzle, row: number, col: number): boolean {
-  return puzzle.cells[row * puzzle.cols + col]?.kind === "beach";
+function isBeachCell(view: TerrainView, row: number, col: number): boolean {
+  return view.terrain[row * view.cols + col] === "beach";
 }
 
 export function drawBeachSurface(
   ctx: CanvasRenderingContext2D,
-  puzzle: Puzzle,
+  view: TerrainView,
   context: AppearanceContext,
   beachSand: BeachSandField,
   cellSize: number,
   gap: number,
 ): void {
-  const { rows, cols } = puzzle;
+  const { rows, cols } = view;
   const subcells = BEACH_SUBCELLS;
   const subSize = terrainSubcellSize(cellSize, subcells);
   const stride = cellSize + gap;
@@ -39,7 +39,7 @@ export function drawBeachSurface(
 
   for (let row = 0; row < rows; row += 1) {
     for (let col = 0; col < cols; col += 1) {
-      if (!isBeachCell(puzzle, row, col)) {
+      if (!isBeachCell(view, row, col)) {
         continue;
       }
 
@@ -73,16 +73,16 @@ export function drawBeachSurface(
 }
 
 export function BeachCanvasOverlay({
-  puzzle,
+  view,
   context,
   cellSize,
   gap,
 }: BeachCanvasOverlayProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
-  const width = puzzle.cols * cellSize + Math.max(0, puzzle.cols - 1) * gap;
-  const height = puzzle.rows * cellSize + Math.max(0, puzzle.rows - 1) * gap;
-  const hasBeach = puzzle.cells.some((cell) => cell.kind === "beach");
+  const width = view.cols * cellSize + Math.max(0, view.cols - 1) * gap;
+  const height = view.rows * cellSize + Math.max(0, view.rows - 1) * gap;
+  const hasBeach = view.terrain.some((kind) => kind === "beach");
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -95,8 +95,8 @@ export function BeachCanvasOverlay({
       return;
     }
 
-    drawBeachSurface(ctx, puzzle, context, context.beachSand, cellSize, gap);
-  }, [puzzle, context, cellSize, gap]);
+    drawBeachSurface(ctx, view, context, context.beachSand, cellSize, gap);
+  }, [view, context, cellSize, gap]);
 
   if (!hasBeach) {
     return null;

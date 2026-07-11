@@ -1,7 +1,7 @@
 import { createNoise2D } from "simplex-noise";
 
 import { hashStringToSeed, mulberry32 } from "@/lib/game/seed";
-import type { Puzzle } from "@/lib/game/types";
+import type { TerrainView } from "@/lib/rendering/terrainView";
 
 export const BEACH_SUBCELLS = 4;
 
@@ -94,9 +94,9 @@ export function modulateSandColorRgb(
   return mixRgb(base, SAND_SHADOW, -delta * strength * 0.85);
 }
 
-export function buildBeachSandField(puzzle: Puzzle): BeachSandField {
+export function buildBeachSandField(view: TerrainView): BeachSandField {
   const noise2D = createNoise2D(
-    mulberry32(hashStringToSeed(`${puzzle.seed}-beach-sand`)),
+    mulberry32(hashStringToSeed(`${view.seed}-beach-sand`)),
   );
 
   return {

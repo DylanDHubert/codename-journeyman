@@ -7,32 +7,28 @@ import { BridgeCanvasOverlay } from "@/components/game/BridgeCanvasOverlay";
 import { CellView } from "@/components/game/CellView";
 import { CliffCanvasOverlay } from "@/components/game/CliffCanvasOverlay";
 import { GrassCanvasOverlay } from "@/components/game/GrassCanvasOverlay";
+import { MissionMarkerOverlay } from "@/components/game/MissionMarkerOverlay";
 import { ObjectCanvasOverlay } from "@/components/game/ObjectCanvasOverlay";
 import { PathLineOverlay, type PathLineStyle } from "@/components/game/PathLineOverlay";
 import { RouteCanvasOverlay, type DraftRoute } from "@/components/game/RouteCanvasOverlay";
 import { RouteShipOverlay } from "@/components/game/RouteShipOverlay";
 import { TerrainBorderOverlay } from "@/components/game/TerrainBorderOverlay";
 import { WaterCanvasOverlay } from "@/components/game/WaterCanvasOverlay";
+import type { Level } from "@/lib/game/level/types";
+import type { CellCoord } from "@/lib/game/types";
 import { createAppearanceContext } from "@/lib/rendering/cellAppearance";
 import { terrainGridGap } from "@/lib/rendering/terrainBorders";
-import type { LevelObject, LevelRoute } from "@/lib/game/level/types";
-import type { CellCoord, Puzzle } from "@/lib/game/types";
+import { terrainViewFromLevel } from "@/lib/rendering/terrainView";
 
 type GameBoardProps = {
-  puzzle: Puzzle;
+  level: Level;
   bridges: Set<string>;
   pathKeys: Set<string>;
   runPath?: CellCoord[];
-  optimalPath?: CellCoord[];
-  showOptimalPath?: boolean;
-  showComponents: boolean;
+  showMission?: boolean;
   interactive?: boolean;
   editable?: boolean;
   sizing?: "play" | "contain";
-  /** OBJECT LAYER (BUILDINGS) DRAWN OVER TERRAIN */
-  objects?: LevelObject[];
-  /** ROUTE LAYER (PIRATE/MERCHANT PATHS) DRAWN OVER OBJECTS */
-  routes?: LevelRoute[];
   draftRoute?: DraftRoute | null;
   onToggleBridge?: (row: number, col: number) => void;
   onCellClick?: (row: number, col: number) => void;
@@ -40,17 +36,13 @@ type GameBoardProps = {
 
 const MAX_CELL = 44;
 const MIN_CELL = 24;
-const emptyRoutes: LevelRoute[] = [];
+const emptyRoutes: Level["routes"] = [];
 const CONTAIN_MIN_CELL = 4;
 const BOARD_PADDING = 24;
 const BOARD_CARD_PADDING = 12;
 const BOARD_CARD_BORDER = 1;
 
-function gridPixelSize(
-  cellSize: number,
-  rows: number,
-  cols: number,
-): { width: number; height: number } {
+function gridPixelSize(cellSize: number, rows: number, cols: number) {
   const gap = terrainGridGap(cellSize);
   return {
     width: cols * cellSize + Math.max(0, cols - 1) * gap,
@@ -58,18 +50,10 @@ function gridPixelSize(
   };
 }
 
-function boardCardPixelSize(
-  cellSize: number,
-  rows: number,
-  cols: number,
-): { width: number; height: number } {
+function boardCardPixelSize(cellSize: number, rows: number, cols: number) {
   const grid = gridPixelSize(cellSize, rows, cols);
   const chrome = BOARD_CARD_PADDING * 2 + BOARD_CARD_BORDER * 2;
-
-  return {
-    width: grid.width + chrome,
-    height: grid.height + chrome,
-  };
+  return { width: grid.width + chrome, height: grid.height + chrome };
 }
 
 function resolveCellSize(
@@ -83,15 +67,12 @@ function resolveCellSize(
     if (width <= 0 || height <= 0) {
       return CONTAIN_MIN_CELL;
     }
-
     let lo = CONTAIN_MIN_CELL;
     let hi = 512;
     let best = CONTAIN_MIN_CELL;
-
     while (lo <= hi) {
       const mid = Math.floor((lo + hi) / 2);
       const card = boardCardPixelSize(mid, rows, cols);
-
       if (card.width <= width && card.height <= height) {
         best = mid;
         lo = mid + 1;
@@ -99,40 +80,25 @@ function resolveCellSize(
         hi = mid - 1;
       }
     }
-
     return best;
   }
-
-  const minCell = MIN_CELL;
-  const maxCell = MAX_CELL;
-
-  let gap = terrainGridGap(maxCell);
+  const gap = terrainGridGap(MAX_CELL);
   let fromWidth = (width - gap * (cols - 1)) / cols;
   let fromHeight = (height - gap * (rows - 1)) / rows;
-
-  let next = Math.floor(Math.min(fromWidth, fromHeight, maxCell));
-  next = Math.max(minCell, next);
-  gap = terrainGridGap(next);
-  fromWidth = (width - gap * (cols - 1)) / cols;
-  fromHeight = (height - gap * (rows - 1)) / rows;
-  next = Math.floor(Math.min(fromWidth, fromHeight, maxCell));
-
-  return Math.max(minCell, next);
+  let next = Math.floor(Math.min(fromWidth, fromHeight, MAX_CELL));
+  next = Math.max(MIN_CELL, next);
+  return next;
 }
 
 export function GameBoard({
-  puzzle,
+  level,
   bridges,
   pathKeys,
   runPath = [],
-  optimalPath = [],
-  showOptimalPath = false,
-  showComponents,
+  showMission = true,
   interactive = true,
   editable = false,
   sizing = "play",
-  objects,
-  routes,
   draftRoute,
   onToggleBridge,
   onCellClick,
@@ -143,75 +109,67 @@ export function GameBoard({
     sizing === "contain" ? CONTAIN_MIN_CELL : MAX_CELL,
   );
   const gridGap = terrainGridGap(cellSize);
+  const view = useMemo(() => terrainViewFromLevel(level), [level]);
 
   const context = useMemo(
-    () => createAppearanceContext(puzzle, bridges, pathKeys, showComponents),
-    [puzzle, bridges, pathKeys, showComponents],
+    () =>
+      createAppearanceContext(
+        view,
+        bridges,
+        pathKeys,
+        false,
+        interactive && !editable ? level : undefined,
+      ),
+    [view, bridges, pathKeys, level, interactive, editable],
   );
 
   const pathLines = useMemo((): PathLineStyle[] => {
-    const lines: PathLineStyle[] = [];
-
-    if (runPath.length >= 2) {
-      lines.push({
+    if (runPath.length < 2) {
+      return [];
+    }
+    return [
+      {
         id: "run",
         path: runPath,
         stroke: "rgb(251 191 36)",
         opacity: 0.95,
-      });
-    }
-
-    if (showOptimalPath && optimalPath.length >= 2) {
-      lines.push({
-        id: "optimal",
-        path: optimalPath,
-        stroke: "rgb(56 189 248)",
-        dashArray: "6 4",
-        opacity: 0.85,
-      });
-    }
-
-    return lines;
-  }, [runPath, optimalPath, showOptimalPath]);
+      },
+    ];
+  }, [runPath]);
 
   useEffect(() => {
     const element = containerRef.current;
     if (!element) {
       return;
     }
-
     const updateSize = () => {
       if (sizing === "contain") {
         setCellSize(
           resolveCellSize(
             element.clientWidth,
             element.clientHeight,
-            puzzle.rows,
-            puzzle.cols,
+            level.rows,
+            level.cols,
             sizing,
           ),
         );
         return;
       }
-
       const width = element.clientWidth - BOARD_PADDING;
       const heightBudget = Math.min(window.innerHeight * 0.58, 640);
-
       setCellSize(
-        resolveCellSize(width, heightBudget, puzzle.rows, puzzle.cols, sizing),
+        resolveCellSize(width, heightBudget, level.rows, level.cols, sizing),
       );
     };
-
     updateSize();
     const observer = new ResizeObserver(updateSize);
     observer.observe(element);
     window.addEventListener("resize", updateSize);
-
     return () => {
       observer.disconnect();
       window.removeEventListener("resize", updateSize);
     };
-  }, [puzzle.rows, puzzle.cols, sizing]);
+  }, [level.rows, level.cols, sizing]);
 
   return (
     <div
@@ -232,60 +190,30 @@ export function GameBoard({
         <div
           className="relative grid"
           style={{
-            gridTemplateColumns: `repeat(${puzzle.cols}, ${cellSize}px)`,
+            gridTemplateColumns: `repeat(${level.cols}, ${cellSize}px)`,
             gap: gridGap,
           }}
         >
-          <WaterCanvasOverlay
-            puzzle={puzzle}
-            context={context}
-            cellSize={cellSize}
-            gap={gridGap}
-          />
-          <BeachCanvasOverlay
-            puzzle={puzzle}
-            context={context}
-            cellSize={cellSize}
-            gap={gridGap}
-          />
-          <GrassCanvasOverlay
-            puzzle={puzzle}
-            context={context}
-            cellSize={cellSize}
-            gap={gridGap}
-          />
-          <CliffCanvasOverlay
-            puzzle={puzzle}
-            context={context}
-            cellSize={cellSize}
-            gap={gridGap}
-          />
-          <TerrainBorderOverlay
-            puzzle={puzzle}
-            context={context}
-            cellSize={cellSize}
-            gap={gridGap}
-          />
-          <BridgeCanvasOverlay
-            puzzle={puzzle}
-            context={context}
-            cellSize={cellSize}
-            gap={gridGap}
-          />
-          {objects && objects.length > 0 ? (
+          <WaterCanvasOverlay view={view} context={context} cellSize={cellSize} gap={gridGap} />
+          <BeachCanvasOverlay view={view} context={context} cellSize={cellSize} gap={gridGap} />
+          <GrassCanvasOverlay view={view} context={context} cellSize={cellSize} gap={gridGap} />
+          <CliffCanvasOverlay view={view} context={context} cellSize={cellSize} gap={gridGap} />
+          <TerrainBorderOverlay view={view} context={context} cellSize={cellSize} gap={gridGap} />
+          <BridgeCanvasOverlay view={view} context={context} cellSize={cellSize} gap={gridGap} />
+          {level.objects.length > 0 ? (
             <ObjectCanvasOverlay
-              objects={objects}
-              rows={puzzle.rows}
-              cols={puzzle.cols}
+              objects={level.objects}
+              rows={level.rows}
+              cols={level.cols}
               cellSize={cellSize}
               gap={gridGap}
             />
           ) : null}
-          {routes && routes.length > 0 ? (
+          {level.routes.length > 0 ? (
             <RouteShipOverlay
-              routes={routes}
-              rows={puzzle.rows}
-              cols={puzzle.cols}
+              routes={level.routes}
+              rows={level.rows}
+              cols={level.cols}
               cellSize={cellSize}
               gap={gridGap}
             />
@@ -294,14 +222,14 @@ export function GameBoard({
             <RouteCanvasOverlay
               routes={emptyRoutes}
               draftRoute={draftRoute}
-              rows={puzzle.rows}
-              cols={puzzle.cols}
+              rows={level.rows}
+              cols={level.cols}
               cellSize={cellSize}
               gap={gridGap}
             />
           ) : null}
-          {Array.from({ length: puzzle.rows }, (_, row) =>
-            Array.from({ length: puzzle.cols }, (_, col) => (
+          {Array.from({ length: level.rows }, (_, row) =>
+            Array.from({ length: level.cols }, (_, col) => (
               <CellView
                 key={`${row}-${col}`}
                 row={row}
@@ -314,10 +242,19 @@ export function GameBoard({
               />
             )),
           )}
+          {showMission ? (
+            <MissionMarkerOverlay
+              mission={level.mission}
+              rows={level.rows}
+              cols={level.cols}
+              cellSize={cellSize}
+              gap={gridGap}
+            />
+          ) : null}
           <PathLineOverlay
             paths={pathLines}
-            rows={puzzle.rows}
-            cols={puzzle.cols}
+            rows={level.rows}
+            cols={level.cols}
             cellSize={cellSize}
             gap={gridGap}
           />

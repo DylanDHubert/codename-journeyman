@@ -7,8 +7,7 @@ import {
   type LevelRoute,
 } from "./types";
 
-// SINGLE-CHAR TERRAIN CODES FOR COMPACT SERIALIZATION
-const TERRAIN_TO_CODE: Record<Exclude<TileKind, "whirlpool">, string> = {
+const TERRAIN_TO_CODE: Record<TileKind, string> = {
   ocean: "o",
   marsh: "m",
   beach: "b",
@@ -25,9 +24,7 @@ const CODE_TO_TERRAIN: Record<string, TileKind> = {
 };
 
 function encodeTerrain(terrain: TileKind[]): string {
-  return terrain
-    .map((kind) => TERRAIN_TO_CODE[kind as Exclude<TileKind, "whirlpool">] ?? "o")
-    .join("");
+  return terrain.map((kind) => TERRAIN_TO_CODE[kind] ?? "o").join("");
 }
 
 function decodeTerrain(encoded: string, expectedLength: number): TileKind[] {
@@ -38,6 +35,10 @@ function decodeTerrain(encoded: string, expectedLength: number): TileKind[] {
   return terrain;
 }
 
+function coordPair(cell: { row: number; col: number }): [number, number] {
+  return [cell.row, cell.col];
+}
+
 export function serializeLevel(level: Level, author?: string): LevelFile {
   return {
     version: LEVEL_FILE_VERSION,
@@ -46,6 +47,11 @@ export function serializeLevel(level: Level, author?: string): LevelFile {
     seed: level.seed,
     grid: { rows: level.rows, cols: level.cols },
     terrain: encodeTerrain(level.terrain),
+    mission: {
+      x: coordPair(level.mission.x),
+      y: coordPair(level.mission.y),
+      z: coordPair(level.mission.z),
+    },
     objects: level.objects.map((object) => ({
       defId: object.defId,
       row: object.at.row,
@@ -66,6 +72,12 @@ export function serializeLevel(level: Level, author?: string): LevelFile {
   };
 }
 
+const FALLBACK_MISSION = {
+  x: { row: 1, col: 1 },
+  y: { row: 2, col: 2 },
+  z: { row: 3, col: 3 },
+};
+
 export function deserializeLevel(file: LevelFile): Level {
   const { rows, cols } = file.grid;
   const terrain = decodeTerrain(file.terrain, rows * cols);
@@ -84,6 +96,14 @@ export function deserializeLevel(file: LevelFile): Level {
     ...(route.config ? { config: route.config } : {}),
   }));
 
+  const mission = file.mission
+    ? {
+        x: { row: file.mission.x[0], col: file.mission.x[1] },
+        y: { row: file.mission.y[0], col: file.mission.y[1] },
+        z: { row: file.mission.z[0], col: file.mission.z[1] },
+      }
+    : FALLBACK_MISSION;
+
   return {
     id: file.id,
     name: file.name,
@@ -93,10 +113,6 @@ export function deserializeLevel(file: LevelFile): Level {
     terrain,
     objects,
     routes,
+    mission,
   };
-}
-
-// WHIRLPOOL MUST NEVER APPEAR IN THE TERRAIN LAYER (IT IS AN OBJECT)
-export function levelHasInvalidTerrain(level: Level): boolean {
-  return level.terrain.some((kind) => kind === "whirlpool");
 }

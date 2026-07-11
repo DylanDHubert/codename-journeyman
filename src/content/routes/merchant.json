@@ -1,0 +1,9 @@
+{
+  "id": "merchant",
+  "label": "Merchant route",
+  "closedByDefault": false,
+  "allowedTerrain": ["ocean", "marsh"],
+  "color": "rgb(45 212 191)",
+  "speed": 1.2,
+  "effects": []
+}

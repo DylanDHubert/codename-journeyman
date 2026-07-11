@@ -5,7 +5,9 @@ import {
   type AppearanceContext,
 } from "@/lib/rendering/cellAppearance";
 import { terrainSurfaceRgb } from "@/lib/rendering/cellAppearance";
-import type { Puzzle, TileKind } from "@/lib/game/types";
+import type { TileKind } from "@/lib/game/types";
+import type { TerrainView } from "@/lib/rendering/terrainView";
+import { terrainKindAt } from "@/lib/rendering/terrainView";
 import { WATER_SUBCELLS } from "@/lib/rendering/waterNoise";
 
 type Rgb = { r: number; g: number; b: number };
@@ -58,35 +60,35 @@ function ditherHash(blockX: number, blockY: number, seed: number): number {
 }
 
 function surfaceAt(
-  puzzle: Puzzle,
+  view: TerrainView,
   context: AppearanceContext,
   row: number,
   col: number,
 ): Rgb {
-  if (row < 0 || col < 0 || row >= puzzle.rows || col >= puzzle.cols) {
+  if (row < 0 || col < 0 || row >= view.rows || col >= view.cols) {
     return { r: 12, g: 48, b: 92 };
   }
 
   return terrainSurfaceRgb(row, col, context);
 }
 
-function cellKindAt(puzzle: Puzzle, row: number, col: number): TileKind | null {
-  if (row < 0 || col < 0 || row >= puzzle.rows || col >= puzzle.cols) {
+function cellKindAt(view: TerrainView, row: number, col: number): TileKind | null {
+  if (row < 0 || col < 0 || row >= view.rows || col >= view.cols) {
     return null;
   }
 
-  return puzzle.cells[row * puzzle.cols + col]!.kind;
+  return terrainKindAt(view, row, col) ?? null;
 }
 
 function landWaterTransition(
-  puzzle: Puzzle,
+  view: TerrainView,
   context: AppearanceContext,
   landRow: number,
   landCol: number,
 ): EdgeTransition {
-  const land = surfaceAt(puzzle, context, landRow, landCol);
+  const land = surfaceAt(view, context, landRow, landCol);
 
-  if (cellKindAt(puzzle, landRow, landCol) === "cliff") {
+  if (cellKindAt(view, landRow, landCol) === "cliff") {
     return { mode: "land-solid", land };
   }
 
@@ -100,7 +102,7 @@ type EdgeTransition =
   | { mode: "skip" };
 
 function edgeTransition(
-  puzzle: Puzzle,
+  view: TerrainView,
   context: AppearanceContext,
   rowA: number,
   colA: number,
@@ -114,30 +116,30 @@ function edgeTransition(
     return { mode: "skip" };
   }
 
-  const waterA = isWaterCell(puzzle, context.bridges, rowA, colA);
-  const waterB = isWaterCell(puzzle, context.bridges, rowB, colB);
+  const waterA = isWaterCell(view, context.bridges, rowA, colA);
+  const waterB = isWaterCell(view, context.bridges, rowB, colB);
 
   if (waterA && waterB) {
     return { mode: "skip" };
   }
 
   if (waterA) {
-    return landWaterTransition(puzzle, context, rowB, colB);
+    return landWaterTransition(view, context, rowB, colB);
   }
 
   if (waterB) {
-    return landWaterTransition(puzzle, context, rowA, colA);
+    return landWaterTransition(view, context, rowA, colA);
   }
 
   return {
     mode: "opaque",
-    primary: surfaceAt(puzzle, context, rowA, colA),
-    secondary: surfaceAt(puzzle, context, rowB, colB),
+    primary: surfaceAt(view, context, rowA, colA),
+    secondary: surfaceAt(view, context, rowB, colB),
   };
 }
 
 function cornerTransition(
-  puzzle: Puzzle,
+  view: TerrainView,
   context: AppearanceContext,
   row: number,
   col: number,
@@ -151,15 +153,15 @@ function cornerTransition(
 
   if (
     cells.some(({ row: r, col: c }) => hasBridgeAt(context.bridges, r, c)) ||
-    cells.some(({ row: r, col: c }) => isWaterCell(puzzle, context.bridges, r, c))
+    cells.some(({ row: r, col: c }) => isWaterCell(view, context.bridges, r, c))
   ) {
     return { mode: "skip" };
   }
 
   return {
     mode: "opaque",
-    primary: surfaceAt(puzzle, context, row, col),
-    secondary: surfaceAt(puzzle, context, row, col + 1),
+    primary: surfaceAt(view, context, row, col),
+    secondary: surfaceAt(view, context, row, col + 1),
   };
 }
 
@@ -217,12 +219,12 @@ function fillCornerDither(
   height: number,
   row: number,
   col: number,
-  puzzle: Puzzle,
+  view: TerrainView,
   context: AppearanceContext,
   blockSize: number,
   seed: number,
 ): void {
-  const transition = cornerTransition(puzzle, context, row, col);
+  const transition = cornerTransition(view, context, row, col);
   if (transition.mode === "skip" || transition.mode === "land-tint") {
     return;
   }
@@ -230,10 +232,10 @@ function fillCornerDither(
   const startX = Math.round(x);
   const startY = Math.round(y);
   const options = [
-    surfaceAt(puzzle, context, row, col),
-    surfaceAt(puzzle, context, row, col + 1),
-    surfaceAt(puzzle, context, row + 1, col),
-    surfaceAt(puzzle, context, row + 1, col + 1),
+    surfaceAt(view, context, row, col),
+    surfaceAt(view, context, row, col + 1),
+    surfaceAt(view, context, row + 1, col),
+    surfaceAt(view, context, row + 1, col + 1),
   ];
 
   for (let blockRow = 0; blockRow < height; blockRow += blockSize) {
@@ -253,7 +255,7 @@ function fillCornerDither(
 
 function drawWhiteGrid(
   ctx: CanvasRenderingContext2D,
-  puzzle: Puzzle,
+  view: TerrainView,
   context: AppearanceContext,
   rows: number,
   cols: number,
@@ -283,15 +285,15 @@ function drawWhiteGrid(
 
 export function drawTerrainBorders(
   ctx: CanvasRenderingContext2D,
-  puzzle: Puzzle,
+  view: TerrainView,
   context: AppearanceContext,
   cellSize: number,
   gap: number,
 ): void {
-  const { rows, cols } = puzzle;
+  const { rows, cols } = view;
   const stride = cellSize + gap;
   const blockSize = terrainTexturePixelSize(cellSize);
-  const seed = hashStringToSeed(`${puzzle.seed}-terrain-border`);
+  const seed = hashStringToSeed(`${view.seed}-terrain-border`);
 
   ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
 
@@ -303,7 +305,7 @@ export function drawTerrainBorders(
         row * stride,
         gap,
         cellSize,
-        edgeTransition(puzzle, context, row, col, row, col + 1),
+        edgeTransition(view, context, row, col, row, col + 1),
         blockSize,
         seed,
       );
@@ -318,7 +320,7 @@ export function drawTerrainBorders(
         row * stride + cellSize,
         cellSize,
         gap,
-        edgeTransition(puzzle, context, row, col, row + 1, col),
+        edgeTransition(view, context, row, col, row + 1, col),
         blockSize,
         seed,
       );
@@ -335,7 +337,7 @@ export function drawTerrainBorders(
         gap,
         row,
         col,
-        puzzle,
+        view,
         context,
         blockSize,
         seed,
@@ -343,5 +345,5 @@ export function drawTerrainBorders(
     }
   }
 
-  drawWhiteGrid(ctx, puzzle, context, rows, cols, cellSize, gap);
+  drawWhiteGrid(ctx, view, context, rows, cols, cellSize, gap);
 }

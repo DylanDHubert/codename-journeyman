@@ -44,7 +44,7 @@ export function smoothRoutePixels(
   closed: boolean,
   cellSize: number,
   gap: number,
-  samplesPerSegment = 12,
+  samplesPerSegment = 20,
 ): Point[] {
   const pts = path.map((cell) => cellCenter(cell, cellSize, gap));
   if (pts.length < 3) {

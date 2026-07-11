@@ -3,9 +3,12 @@ import { createNoise2D } from "simplex-noise";
 import { DIRECTIONS } from "./constants";
 import { indexFor, inBounds } from "./coords";
 import { hashStringToSeed, mulberry32 } from "./seed";
-import type { CellCoord, PuzzleCell, TileKind } from "./types";
+import type { CellCoord, TileKind } from "./types";
 
-type BaseGrid = TileKind[][];
+/** INTERNAL GEN GRID — WHIRLPOOL EXISTS HERE UNTIL gridToLevel CONVERTS TO OBJECTS */
+export type GenTileKind = TileKind | "whirlpool";
+
+type BaseGrid = GenTileKind[][];
 
 type FeatureContext = {
   rows: number;
@@ -14,11 +17,11 @@ type FeatureContext = {
   seed: string;
 };
 
-function isLandKind(kind: TileKind): boolean {
+function isLandKind(kind: GenTileKind): boolean {
   return kind === "grass" || kind === "beach" || kind === "cliff";
 }
 
-function isWaterKind(kind: TileKind): boolean {
+function isWaterKind(kind: GenTileKind): boolean {
   return kind === "ocean" || kind === "marsh" || kind === "whirlpool";
 }
 
@@ -257,39 +260,6 @@ export function labelLandComponents(
   }
 
   return labels;
-}
-
-export function toPuzzleCells(
-  grid: BaseGrid,
-  labels: number[][],
-  rows: number,
-  cols: number,
-  start: CellCoord,
-  waypoint: CellCoord,
-  goal: CellCoord,
-): PuzzleCell[] {
-  const cells: PuzzleCell[] = [];
-
-  for (let row = 0; row < rows; row += 1) {
-    for (let col = 0; col < cols; col += 1) {
-      let role: PuzzleCell["role"] = "none";
-      if (row === start.row && col === start.col) {
-        role = "start";
-      } else if (row === waypoint.row && col === waypoint.col) {
-        role = "waypoint";
-      } else if (row === goal.row && col === goal.col) {
-        role = "goal";
-      }
-
-      cells.push({
-        kind: grid[row]![col]!,
-        role,
-        componentId: isLandKind(grid[row]![col]!) ? labels[row]![col]! : -1,
-      });
-    }
-  }
-
-  return cells;
 }
 
 export function isInteriorGrass(

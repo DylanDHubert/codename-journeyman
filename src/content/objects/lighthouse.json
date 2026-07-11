@@ -1,0 +1,11 @@
+{
+  "id": "lighthouse",
+  "label": "Lighthouse",
+  "category": "building",
+  "placement": {
+    "allowedTerrain": ["cliff"]
+  },
+  "effects": [{ "type": "custom", "id": "lighthouseLight" }],
+  "render": "lighthouse",
+  "previewTerrain": "cliff"
+}

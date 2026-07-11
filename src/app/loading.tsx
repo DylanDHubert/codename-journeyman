@@ -1,9 +1,7 @@
-import { GenerationLoading } from "@/components/game/GenerationLoading";
-
 export default function Loading() {
   return (
-    <main className="min-h-full flex-1 bg-ocean-gradient pb-16">
-      <GenerationLoading fullScreen />
-    </main>
+    <div className="flex min-h-dvh items-center justify-center bg-ocean-gradient text-sm text-sky-100/70">
+      Loading…
+    </div>
   );
 }

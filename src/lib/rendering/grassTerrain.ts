@@ -1,7 +1,7 @@
 import { createNoise2D } from "simplex-noise";
 
 import { hashStringToSeed, mulberry32 } from "@/lib/game/seed";
-import type { Puzzle } from "@/lib/game/types";
+import type { TerrainView } from "@/lib/rendering/terrainView";
 
 export const GRASS_SUBCELLS = 4;
 
@@ -93,9 +93,9 @@ export function modulateGrassColorRgb(
   return mixRgb(base, GRASS_SHADOW, -delta * strength * 0.9);
 }
 
-export function buildGrassTerrainField(puzzle: Puzzle): GrassTerrainField {
+export function buildGrassTerrainField(view: TerrainView): GrassTerrainField {
   const noise2D = createNoise2D(
-    mulberry32(hashStringToSeed(`${puzzle.seed}-grass-terrain`)),
+    mulberry32(hashStringToSeed(`${view.seed}-grass-terrain`)),
   );
 
   return {

@@ -1,7 +1,8 @@
 import { createNoise2D } from "simplex-noise";
 
 import { hashStringToSeed, mulberry32 } from "@/lib/game/seed";
-import type { Puzzle } from "@/lib/game/types";
+import type { TerrainView } from "@/lib/rendering/terrainView";
+import { terrainKindAt } from "@/lib/rendering/terrainView";
 
 export const BRIDGE_SUBCELLS = 4;
 
@@ -74,7 +75,7 @@ function deckRgbFromNoise(
   return mixRgb(WOOD_BASE, WOOD_SHADOW, -delta * 0.65);
 }
 
-export function buildBridgeWoodField(puzzle: Puzzle): BridgeWoodField {
+export function buildBridgeWoodField(puzzle: TerrainView): BridgeWoodField {
   const noise2D = createNoise2D(
     mulberry32(hashStringToSeed(`${puzzle.seed}-bridge-wood`)),
   );
@@ -102,7 +103,7 @@ function hasBridge(bridges: Set<string>, row: number, col: number): boolean {
 }
 
 function isMarshBridgeCell(
-  puzzle: Puzzle,
+  puzzle: TerrainView,
   bridges: Set<string>,
   row: number,
   col: number,
@@ -115,7 +116,7 @@ function isMarshBridgeCell(
     return false;
   }
 
-  return puzzle.cells[row * puzzle.cols + col]!.kind === "marsh";
+  return terrainKindAt(puzzle, row, col) === "marsh";
 }
 
 function vertexAxisPosition(
@@ -142,7 +143,7 @@ function vertexAxisPosition(
 
 /** GRID VERTICES — CENTER IN GAPS WHEN BRIDGES MEET ON BOTH SIDES OF EACH AXIS */
 export function collectBridgePylonCorners(
-  puzzle: Puzzle,
+  puzzle: TerrainView,
   bridges: Set<string>,
   cellSize: number,
   gap: number,
@@ -219,7 +220,7 @@ function drawBridgeWoodRect(
 /** FILL GRID GAPS WITH DECK WOOD WHEN TWO BRIDGE CELLS SHARE AN EDGE */
 export function drawBridgeGapConnections(
   ctx: CanvasRenderingContext2D,
-  puzzle: Puzzle,
+  puzzle: TerrainView,
   bridges: Set<string>,
   bridgeWood: BridgeWoodField,
   cellSize: number,
@@ -503,7 +504,7 @@ function nailHash(seed: number, row: number, col: number, index: number): number
 /** MARSH DECK NAILS — SAME WOOD DECK, SMALL GREY CIRCLES */
 export function drawMarshBridgeNails(
   ctx: CanvasRenderingContext2D,
-  puzzle: Puzzle,
+  puzzle: TerrainView,
   row: number,
   col: number,
   originX: number,

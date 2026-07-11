@@ -6,7 +6,7 @@ import {
   DEFAULT_CREATE_CONFIG,
   normalizeCreateConfig,
 } from "@/lib/game/createConfig";
-import { generateDraftPuzzle } from "@/lib/game/generationDraft";
+import { generateLevel } from "@/lib/game/level/generateLevel";
 
 type CreateViewPageProps = {
   searchParams: Promise<Record<string, string | undefined>>;
@@ -23,11 +23,11 @@ export default async function CreateViewPage({ searchParams }: CreateViewPagePro
   const config = normalizeCreateConfig(
     createConfigFromSearchParams(params) ?? DEFAULT_CREATE_CONFIG,
   );
-  const puzzle = generateDraftPuzzle({ seed, config });
+  const level = generateLevel({ seed, config });
 
   return (
     <main className="h-dvh overflow-hidden bg-ocean-gradient">
-      <DraftPuzzleView puzzle={puzzle} />
+      <DraftPuzzleView level={level} />
     </main>
   );
 }

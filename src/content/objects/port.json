@@ -1,0 +1,12 @@
+{
+  "id": "port",
+  "label": "Port",
+  "category": "building",
+  "placement": {
+    "allowedTerrain": ["ocean", "marsh"],
+    "requiresAdjacentTerrain": ["grass", "beach", "cliff"]
+  },
+  "effects": [{ "type": "custom", "id": "port" }],
+  "render": "port",
+  "previewTerrain": "ocean"
+}

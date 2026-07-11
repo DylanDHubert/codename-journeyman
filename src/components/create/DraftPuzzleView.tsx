@@ -6,7 +6,6 @@ import { EditorPalette, type EditorTool } from "@/components/create/EditorPalett
 import { GameBoard } from "@/components/game/GameBoard";
 import type { DraftRoute } from "@/components/game/RouteCanvasOverlay";
 import { saveLevelAction } from "@/app/actions/saveLevel";
-import { levelToPuzzle, puzzleToLevel } from "@/lib/game/level/fromPuzzle";
 import { serializeLevel } from "@/lib/game/level/serialize";
 import type { Level } from "@/lib/game/level/types";
 import {
@@ -16,11 +15,11 @@ import {
 import {
   canPlaceObjectAt,
   canRouteEnter,
-} from "@/lib/game/objects/rules";
-import type { PuzzleGrid, TileKind } from "@/lib/game/types";
+} from "@/lib/game/rules";
+import type { TileKind } from "@/lib/game/types";
 
 type DraftPuzzleViewProps = {
-  puzzle: PuzzleGrid;
+  level: Level;
 };
 
 const PANEL_FRAME =
@@ -49,15 +48,14 @@ function newRouteId(): string {
   return `route-${Date.now()}-${Math.floor(Math.random() * 1e6)}`;
 }
 
-export function DraftPuzzleView({ puzzle }: DraftPuzzleViewProps) {
-  const [level, setLevel] = useState<Level>(() => puzzleToLevel(puzzle));
+export function DraftPuzzleView({ level: initialLevel }: DraftPuzzleViewProps) {
+  const [level, setLevel] = useState<Level>(initialLevel);
   const [tool, setTool] = useState<EditorTool>(null);
   const [draftRoute, setDraftRoute] = useState<DraftRoute | null>(null);
-  const [name, setName] = useState(() => puzzleToLevel(puzzle).name);
+  const [name, setName] = useState(() => initialLevel.name);
   const [status, setStatus] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
 
-  const renderPuzzle = useMemo(() => levelToPuzzle(level), [level]);
   const emptyBridges = useMemo(() => new Set<string>(), []);
   const emptyPath = useMemo(() => new Set<string>(), []);
 
@@ -240,15 +238,12 @@ export function DraftPuzzleView({ puzzle }: DraftPuzzleViewProps) {
         <div className={`flex min-h-0 flex-[3] p-3 ${PANEL_FRAME}`}>
           <div className="flex min-h-0 flex-1 items-start justify-center">
             <GameBoard
-              puzzle={renderPuzzle}
+              level={level}
               bridges={emptyBridges}
               pathKeys={emptyPath}
-              showComponents={false}
               interactive={false}
               editable={tool !== null}
               onCellClick={handleCellClick}
-              objects={level.objects}
-              routes={level.routes}
               draftRoute={draftRoute}
               sizing="contain"
             />

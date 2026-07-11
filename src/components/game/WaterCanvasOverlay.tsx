@@ -11,8 +11,6 @@ import {
 import type { TileKind } from "@/lib/game/types";
 import {
   applyMarshSplotches,
-  drawWhirlpoolSpiral,
-  resolveWhirlpoolSpiralFrame,
 } from "@/lib/rendering/waterFeatures";
 import {
   modulateWaterColorRgb,
@@ -24,10 +22,10 @@ import {
   terrainSubcellSize,
   terrainTexturePixelSize,
 } from "@/lib/rendering/terrainBorders";
-import type { Puzzle } from "@/lib/game/types";
+import type { TerrainView } from "@/lib/rendering/terrainView";
 
 type WaterCanvasOverlayProps = {
-  puzzle: Puzzle;
+  view: TerrainView;
   context: AppearanceContext;
   cellSize: number;
   gap: number;
@@ -71,7 +69,7 @@ function paintWaterBlock(
   const softenTransition =
     transitionEdge !== undefined &&
     isOuterTransitionEdge(transitionEdge) &&
-    (base.kind === "marsh" || base.kind === "whirlpool");
+    (base.kind === "marsh");
 
   let paintRgb = base.rgb;
   let paintKind: TileKind = base.kind;
@@ -170,21 +168,21 @@ function drawWaterGapRegion(
 
 function drawWaterGaps(
   ctx: CanvasRenderingContext2D,
-  puzzle: Puzzle,
+  view: TerrainView,
   context: AppearanceContext,
   waterNoise: WaterNoiseField,
   waterPhase: number,
   cellSize: number,
   gap: number,
 ): void {
-  const { rows, cols } = puzzle;
+  const { rows, cols } = view;
   const stride = cellSize + gap;
   const blockSize = terrainTexturePixelSize(cellSize);
 
   for (let row = 0; row < rows; row += 1) {
     for (let col = 0; col < cols - 1; col += 1) {
-      const leftWater = isAnimatedWaterTile(puzzle, row, col);
-      const rightWater = isAnimatedWaterTile(puzzle, row, col + 1);
+      const leftWater = isAnimatedWaterTile(view, row, col);
+      const rightWater = isAnimatedWaterTile(view, row, col + 1);
       if (!leftWater && !rightWater) {
         continue;
       }
@@ -213,8 +211,8 @@ function drawWaterGaps(
 
   for (let row = 0; row < rows - 1; row += 1) {
     for (let col = 0; col < cols; col += 1) {
-      const topWater = isAnimatedWaterTile(puzzle, row, col);
-      const bottomWater = isAnimatedWaterTile(puzzle, row + 1, col);
+      const topWater = isAnimatedWaterTile(view, row, col);
+      const bottomWater = isAnimatedWaterTile(view, row + 1, col);
       if (!topWater && !bottomWater) {
         continue;
       }
@@ -251,7 +249,7 @@ function drawWaterGaps(
       ];
 
       const waterCell = cells.find(({ row: r, col: c }) =>
-        isAnimatedWaterTile(puzzle, r, c),
+        isAnimatedWaterTile(view, r, c),
       );
       if (!waterCell) {
         continue;
@@ -280,14 +278,14 @@ function drawWaterGaps(
 
 export function drawWaterSurface(
   ctx: CanvasRenderingContext2D,
-  puzzle: Puzzle,
+  view: TerrainView,
   context: AppearanceContext,
   waterNoise: WaterNoiseField,
   waterPhase: number,
   cellSize: number,
   gap: number,
 ): void {
-  const { rows, cols } = puzzle;
+  const { rows, cols } = view;
   const subcells = WATER_SUBCELLS;
   const subSize = terrainSubcellSize(cellSize, subcells);
   const stride = cellSize + gap;
@@ -296,7 +294,7 @@ export function drawWaterSurface(
 
   for (let row = 0; row < rows; row += 1) {
     for (let col = 0; col < cols; col += 1) {
-      if (!isAnimatedWaterTile(puzzle, row, col)) {
+      if (!isAnimatedWaterTile(view, row, col)) {
         continue;
       }
 
@@ -335,22 +333,12 @@ export function drawWaterSurface(
           );
         }
       }
-
-      if (base.kind === "whirlpool") {
-        drawWhirlpoolSpiral(
-          ctx,
-          originX,
-          originY,
-          cellSize,
-          resolveWhirlpoolSpiralFrame(waterPhase),
-        );
-      }
     }
   }
 
   drawWaterGaps(
     ctx,
-    puzzle,
+    view,
     context,
     waterNoise,
     waterPhase,
@@ -360,7 +348,7 @@ export function drawWaterSurface(
 }
 
 export function WaterCanvasOverlay({
-  puzzle,
+  view,
   context,
   cellSize,
   gap,
@@ -369,8 +357,8 @@ export function WaterCanvasOverlay({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [waterPhase, setWaterPhase] = useState(0);
 
-  const width = puzzle.cols * cellSize + Math.max(0, puzzle.cols - 1) * gap;
-  const height = puzzle.rows * cellSize + Math.max(0, puzzle.rows - 1) * gap;
+  const width = view.cols * cellSize + Math.max(0, view.cols - 1) * gap;
+  const height = view.rows * cellSize + Math.max(0, view.rows - 1) * gap;
 
   useEffect(() => {
     const timer = window.setInterval(() => {
@@ -393,14 +381,14 @@ export function WaterCanvasOverlay({
 
     drawWaterSurface(
       ctx,
-      puzzle,
+      view,
       context,
       context.waterNoise,
       waterPhase,
       cellSize,
       gap,
     );
-  }, [puzzle, context, waterPhase, cellSize, gap]);
+  }, [view, context, waterPhase, cellSize, gap]);
 
   return (
     <canvas

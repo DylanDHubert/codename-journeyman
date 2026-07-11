@@ -1,7 +1,7 @@
 import { createNoise2D } from "simplex-noise";
 
 import { hashStringToSeed, mulberry32 } from "@/lib/game/seed";
-import type { Puzzle } from "@/lib/game/types";
+import type { TerrainView } from "@/lib/rendering/terrainView";
 
 export const CLIFF_SUBCELLS = 4;
 
@@ -94,9 +94,9 @@ export function modulateRockColorRgb(
   return mixRgb(base, ROCK_SHADOW, -delta * strength * 0.92);
 }
 
-export function buildCliffRockField(puzzle: Puzzle): CliffRockField {
+export function buildCliffRockField(view: TerrainView): CliffRockField {
   const noise2D = createNoise2D(
-    mulberry32(hashStringToSeed(`${puzzle.seed}-cliff-rock`)),
+    mulberry32(hashStringToSeed(`${view.seed}-cliff-rock`)),
   );
 
   return {

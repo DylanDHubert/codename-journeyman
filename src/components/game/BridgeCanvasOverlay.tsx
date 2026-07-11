@@ -12,10 +12,10 @@ import {
   type BridgeWoodField,
 } from "@/lib/rendering/bridgeWood";
 import { terrainSubcellRect, terrainSubcellSize } from "@/lib/rendering/terrainBorders";
-import type { Puzzle } from "@/lib/game/types";
+import type { TerrainView } from "@/lib/rendering/terrainView";
 
 type BridgeCanvasOverlayProps = {
-  puzzle: Puzzle;
+  view: TerrainView;
   context: AppearanceContext;
   cellSize: number;
   gap: number;
@@ -23,13 +23,13 @@ type BridgeCanvasOverlayProps = {
 
 export function drawBridgeSurface(
   ctx: CanvasRenderingContext2D,
-  puzzle: Puzzle,
+  view: TerrainView,
   bridges: Set<string>,
   bridgeWood: BridgeWoodField,
   cellSize: number,
   gap: number,
 ): void {
-  const { rows, cols } = puzzle;
+  const { rows, cols } = view;
   const subcells = BRIDGE_SUBCELLS;
   const subSize = terrainSubcellSize(cellSize, subcells);
   const stride = cellSize + gap;
@@ -68,7 +68,7 @@ export function drawBridgeSurface(
 
   drawBridgeGapConnections(
     ctx,
-    puzzle,
+    view,
     bridges,
     bridgeWood,
     cellSize,
@@ -88,13 +88,13 @@ export function drawBridgeSurface(
     const originY = row * stride;
     const cellIndex = row * cols + col;
 
-    if (puzzle.cells[cellIndex]!.kind === "marsh") {
-      drawMarshBridgeNails(ctx, puzzle, row, col, originX, originY, cellSize);
+    if (view.terrain[cellIndex]! === "marsh") {
+      drawMarshBridgeNails(ctx, view, row, col, originX, originY, cellSize);
     }
   }
 
   const pylonCorners = collectBridgePylonCorners(
-    puzzle,
+    view,
     bridges,
     cellSize,
     gap,
@@ -105,15 +105,15 @@ export function drawBridgeSurface(
 }
 
 export function BridgeCanvasOverlay({
-  puzzle,
+  view,
   context,
   cellSize,
   gap,
 }: BridgeCanvasOverlayProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
-  const width = puzzle.cols * cellSize + Math.max(0, puzzle.cols - 1) * gap;
-  const height = puzzle.rows * cellSize + Math.max(0, puzzle.rows - 1) * gap;
+  const width = view.cols * cellSize + Math.max(0, view.cols - 1) * gap;
+  const height = view.rows * cellSize + Math.max(0, view.rows - 1) * gap;
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -128,13 +128,13 @@ export function BridgeCanvasOverlay({
 
     drawBridgeSurface(
       ctx,
-      puzzle,
+      view,
       context.bridges,
       context.bridgeWood,
       cellSize,
       gap,
     );
-  }, [puzzle, context, cellSize, gap]);
+  }, [view, context, cellSize, gap]);
 
   if (context.bridges.size === 0) {
     return null;

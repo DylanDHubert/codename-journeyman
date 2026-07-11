@@ -1,7 +1,8 @@
 import { createNoise2D } from "simplex-noise";
 
 import { hashStringToSeed, mulberry32 } from "@/lib/game/seed";
-import type { Puzzle, TileKind } from "@/lib/game/types";
+import type { TileKind } from "@/lib/game/types";
+import type { TerrainView } from "@/lib/rendering/terrainView";
 
 /** SUB-CELLS PER SIDE — FINER GRID WITHIN EACH TILE FOR INTERNAL TEXTURE */
 export const WATER_SUBCELLS = 4;
@@ -76,14 +77,14 @@ function worldSamplePoint(
   return { x, y };
 }
 
-export function buildWaterNoiseField(puzzle: Puzzle): WaterNoiseField {
-  const { seed } = puzzle;
+export function buildWaterNoiseField(view: TerrainView): WaterNoiseField {
+  const { seed } = view;
   const noise2D = createNoise2D(
     mulberry32(hashStringToSeed(`${seed}-water-noise`)),
   );
 
   return {
-    cols: puzzle.cols,
+    cols: view.cols,
     sample(phase, row, col, subRow = Math.floor(WATER_SUBCELLS / 2), subCol = Math.floor(WATER_SUBCELLS / 2)) {
       const driftX = phase * WATER_DRIFT.x;
       const driftY = phase * WATER_DRIFT.y;
@@ -97,8 +98,6 @@ function noiseStrength(kind: TileKind): number {
   switch (kind) {
     case "marsh":
       return 0.3;
-    case "whirlpool":
-      return 0.32;
     case "ocean":
     default:
       return 0.35;

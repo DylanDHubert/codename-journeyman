@@ -1,29 +1,22 @@
-import { BridgeGame } from "@/components/game/BridgeGame";
-import { configFromSearchParams } from "@/lib/game/generationConfig";
-import { DEFAULT_GENERATION_CONFIG, normalizeConfig } from "@/lib/game/generationConfig";
-import { dailySeed } from "@/lib/game/seed";
+import Link from "next/link";
 
-type PlayPageProps = {
-  searchParams: Promise<{
-    seed?: string;
-    rows?: string;
-    cols?: string;
-    threshold?: string;
-    falloff?: string;
-    falloffRadius?: string;
-  }>;
-};
-
-export default async function PlayPage({ searchParams }: PlayPageProps) {
-  const params = await searchParams;
-  const seed = params.seed ?? dailySeed();
-  const initialConfig = normalizeConfig(
-    configFromSearchParams(params) ?? DEFAULT_GENERATION_CONFIG,
-  );
-
+/** PLAY MODE STUB — OLIVER: LOAD LevelFile, REUSE GameBoard + simulateLevel */
+export default function PlayPage() {
   return (
-    <main className="min-h-full flex-1 bg-ocean-gradient pb-16">
-      <BridgeGame seed={seed} initialConfig={initialConfig} />
+    <main className="flex min-h-dvh flex-col items-center justify-center gap-4 bg-ocean-gradient px-6 text-center">
+      <h1 className="text-xl font-semibold text-white">Play</h1>
+      <p className="max-w-md text-sm text-sky-100/70">
+        Play mode will load saved levels from{" "}
+        <code className="text-sky-200">public/levels/</code> and reuse the same{" "}
+        <code className="text-sky-200">GameBoard</code> as the editor. See{" "}
+        <code className="text-sky-200">src/lib/game/simulateLevel.ts</code>.
+      </p>
+      <Link
+        href="/create"
+        className="rounded-md border border-sky-300/50 px-4 py-2 text-sm text-sky-100 hover:border-sky-200"
+      >
+        ← Create levels
+      </Link>
     </main>
   );
 }

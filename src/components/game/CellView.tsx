@@ -1,6 +1,6 @@
 import type { CSSProperties } from "react";
 
-import { canPlaceBridge } from "@/lib/game/simulation";
+import { canPlaceBridgeAt } from "@/lib/game/rules";
 import {
   appearanceForCell,
   isMarkerOverlay,
@@ -31,8 +31,9 @@ export function CellView({
   const appearance = appearanceForCell(row, col, context);
   const accent = overlayAccent(appearance.overlay);
   const label = overlayLabel(appearance.overlay);
-  const bridgeable = canPlaceBridge(context.puzzle, row, col);
-  // EDIT MODE PAINTS ANY CELL; PLAY MODE ONLY TOGGLES BRIDGEABLE WATER
+  const bridgeable = context.level
+    ? canPlaceBridgeAt(context.level, row, col)
+    : false;
   const clickable = editable || (interactive && bridgeable);
 
   const style: CSSProperties = {
@@ -54,19 +55,9 @@ export function CellView({
           ? "cursor-pointer hover:brightness-110 active:scale-95"
           : "cursor-default",
         appearance.overlay === "path" ? "brightness-110" : "",
-        context.puzzle.cells[row * context.puzzle.cols + col]?.kind === "whirlpool"
-          ? "overflow-hidden"
-          : "",
       ].join(" ")}
       style={style}
     >
-      {appearance.componentTint ? (
-        <span
-          className="pointer-events-none absolute inset-0"
-          style={{ backgroundColor: appearance.componentTint }}
-        />
-      ) : null}
-
       {accent && isMarkerOverlay(appearance.overlay) ? (
         <span
           className="pointer-events-none absolute inset-1 rounded-full border-2 shadow-sm"

@@ -9,28 +9,28 @@ import {
   type GrassTerrainField,
 } from "@/lib/rendering/grassTerrain";
 import { terrainSubcellRect, terrainSubcellSize } from "@/lib/rendering/terrainBorders";
-import type { Puzzle } from "@/lib/game/types";
+import type { TerrainView } from "@/lib/rendering/terrainView";
 
 type GrassCanvasOverlayProps = {
-  puzzle: Puzzle;
+  view: TerrainView;
   context: AppearanceContext;
   cellSize: number;
   gap: number;
 };
 
-function isGrassCell(puzzle: Puzzle, row: number, col: number): boolean {
-  return puzzle.cells[row * puzzle.cols + col]?.kind === "grass";
+function isGrassCell(view: TerrainView, row: number, col: number): boolean {
+  return view.terrain[row * view.cols + col] === "grass";
 }
 
 export function drawGrassSurface(
   ctx: CanvasRenderingContext2D,
-  puzzle: Puzzle,
+  view: TerrainView,
   context: AppearanceContext,
   grassTerrain: GrassTerrainField,
   cellSize: number,
   gap: number,
 ): void {
-  const { rows, cols } = puzzle;
+  const { rows, cols } = view;
   const subcells = GRASS_SUBCELLS;
   const subSize = terrainSubcellSize(cellSize, subcells);
   const stride = cellSize + gap;
@@ -39,7 +39,7 @@ export function drawGrassSurface(
 
   for (let row = 0; row < rows; row += 1) {
     for (let col = 0; col < cols; col += 1) {
-      if (!isGrassCell(puzzle, row, col)) {
+      if (!isGrassCell(view, row, col)) {
         continue;
       }
 
@@ -73,16 +73,16 @@ export function drawGrassSurface(
 }
 
 export function GrassCanvasOverlay({
-  puzzle,
+  view,
   context,
   cellSize,
   gap,
 }: GrassCanvasOverlayProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
-  const width = puzzle.cols * cellSize + Math.max(0, puzzle.cols - 1) * gap;
-  const height = puzzle.rows * cellSize + Math.max(0, puzzle.rows - 1) * gap;
-  const hasGrass = puzzle.cells.some((cell) => cell.kind === "grass");
+  const width = view.cols * cellSize + Math.max(0, view.cols - 1) * gap;
+  const height = view.rows * cellSize + Math.max(0, view.rows - 1) * gap;
+  const hasGrass = view.terrain.some((kind) => kind === "grass");
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -95,8 +95,8 @@ export function GrassCanvasOverlay({
       return;
     }
 
-    drawGrassSurface(ctx, puzzle, context, context.grassTerrain, cellSize, gap);
-  }, [puzzle, context, cellSize, gap]);
+    drawGrassSurface(ctx, view, context, context.grassTerrain, cellSize, gap);
+  }, [view, context, cellSize, gap]);
 
   if (!hasGrass) {
     return null;

@@ -1,0 +1,11 @@
+{
+  "id": "whirlpool",
+  "label": "Whirlpool",
+  "category": "building",
+  "placement": {
+    "allowedTerrain": ["ocean", "marsh"]
+  },
+  "effects": [{ "type": "blocksBridge" }],
+  "render": "whirlpool",
+  "previewTerrain": "ocean"
+}
